@@ -1,0 +1,11 @@
+﻿Testing signup with: { name: 'Test User', email: 'test1766125897012@example.com' }
+
+Sending request to http://localhost:5000/api/v1/auth/register...
+
+Response Status: 500
+Response Data: {
+  "message": "Server error",
+  "error": "User validation failed: branch: `` is not a valid enum value for path `branch`."
+}
+
+Γ¥î FAILED! Error: Server error

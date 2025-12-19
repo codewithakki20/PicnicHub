@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema(
 
     branch: {
       type: String,
-      enum: ["Science", "Commerce", "Arts", "Engineering", "Pharmacy", "MBA", "Others"],
+      enum: ["", "Science", "Commerce", "Arts", "Engineering", "Pharmacy", "MBA", "Others"],
       default: "",
     },
 
