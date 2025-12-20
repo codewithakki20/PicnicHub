@@ -9,7 +9,13 @@ import jwt from 'jsonwebtoken';
 
 export const register = async (req, res) => {
   try {
+    console.log("Register API Hit. Body:", req.body);
     const { name, email, password } = req.body;
+
+    // Check for required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
 
     // Check if user exists
     const trimmedEmail = email.trim().toLowerCase();
@@ -32,9 +38,22 @@ export const register = async (req, res) => {
     await user.save();
 
     // Send OTP Email
+    // Send OTP Email
     const message = `Your OTP is ${otp}. It is valid for 10 minutes.`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #4CAF50;">Verify Your Account</h2>
+        <p>Hello <strong>${name}</strong>,</p>
+        <p>Your One-Time Password (OTP) for account verification is:</p>
+        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
+          <h1 style="margin: 0; letter-spacing: 5px; color: #333;">${otp}</h1>
+        </div>
+        <p>This code is valid for 10 minutes.</p>
+        <p style="font-size: 0.9em; color: #666;">If you didn't request this, please ignore this email.</p>
+      </div>
+    `;
 
-    sendEmail(user.email, 'Verify your account', message).catch(err => {
+    sendEmail({ to: user.email, subject: 'Verify your account', text: message, html }).catch(err => {
       console.error("Failed to send OTP email:", err);
     });
 
@@ -44,6 +63,7 @@ export const register = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Register Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -51,6 +71,11 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     // Check user
     const trimmedEmail = email.trim().toLowerCase();
@@ -120,18 +145,28 @@ export const refreshToken = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const normalizedEmail = email ? email.trim().toLowerCase() : '';
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const user = await User.findOne({ email: normalizedEmail });
-    if (!user) return res.json({ message: 'If user exists, password reset OTP sent' });
+
+    // Security: don't reveal if user exists or not
+    if (!user) {
+      return res.json({ message: 'If user exists, password reset OTP sent' });
+    }
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     user.passwordResetOtp = otp;
-    user.passwordResetOtpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+    user.passwordResetOtpExpires = otpExpires;
     await user.save();
 
-    const message = `Your password reset OTP is ${otp}. It is valid for 10 minutes.`;
+    const subject = 'Password Reset OTP';
+    const text = `Your password reset OTP is ${otp}. It expires in 10 minutes.`;
     const html = `
       <h3>Password Reset Request</h3>
       <p>Your password reset OTP is <strong>${otp}</strong>.</p>
@@ -139,21 +174,19 @@ export const forgotPassword = async (req, res) => {
       <p>If you didn't request this, please ignore this email.</p>
     `;
 
-    try {
-      sendEmail(user.email, 'Password Reset OTP', message, html).catch(err => {
-        console.error("Failed to send password reset email:", err);
-      });
-      res.status(200).json({ message: 'OTP sent to email!' });
-    } catch (err) {
-      user.passwordResetOtp = undefined;
-      user.passwordResetOtpExpires = undefined;
-      await user.save({ validateBeforeSave: false });
-      return res.status(500).json({ message: 'Error sending email. Try again later!' });
-    }
+    sendEmail({ to: user.email, subject, text, html }).catch(err => {
+      console.error('Failed to send password reset OTP email:', err);
+    });
+
+    res.json({ message: 'Password reset OTP sent to email' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
+
 
 export const resetPassword = async (req, res) => {
   try {
@@ -245,7 +278,7 @@ export const sendOtp = async (req, res) => {
     const text = `Your OTP code is ${otp}. It expires in 10 minutes.`;
     const html = `<p>Your OTP code is <strong>${otp}</strong>. It expires in 10 minutes.</p>`;
 
-    sendEmail(email, subject, text, html).catch(err => {
+    sendEmail({ to: email, subject, text, html }).catch(err => {
       console.error("Failed to send OTP email (Resend):", err);
     });
 

@@ -32,13 +32,25 @@ export const getLocation = async (req, res) => {
 };
 
 // Nearby locations
+// Nearby locations (Bounding Box approximation)
 export const getNearbyLocations = async (req, res) => {
   try {
     const { lat, lng, radius = 2000 } = req.query;
     if (!lat || !lng) return res.status(400).json({ message: 'lat and lng are required' });
 
+    const centerLat = parseFloat(lat);
+    const centerLng = parseFloat(lng);
+    const rad = parseInt(radius); // meters
+
+    // 1 deg lat ~= 111km
+    // 1 deg lng ~= 111km * cos(lat)
+    const rEarth = 6378137; // meters
+    const latDelta = (rad / rEarth) * (180 / Math.PI);
+    const lngDelta = (rad / (rEarth * Math.cos(Math.PI * centerLat / 180))) * (180 / Math.PI);
+
     const locations = await Location.find({
-      coords: { $near: { $geometry: { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] }, $maxDistance: parseInt(radius) } },
+      "coords.lat": { $gte: centerLat - latDelta, $lte: centerLat + latDelta },
+      "coords.lng": { $gte: centerLng - lngDelta, $lte: centerLng + lngDelta }
     }).lean();
 
     res.json(locations);

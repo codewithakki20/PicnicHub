@@ -63,6 +63,7 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting registration with values:", values);
     setError("");
 
     if (values.password !== values.confirmPassword)

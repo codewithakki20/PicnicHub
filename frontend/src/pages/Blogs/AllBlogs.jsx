@@ -11,7 +11,7 @@ import Spinner from "../../components/ui/Spinner";
 /* ======================================================
    CONSTANTS & CONFIG
 ====================================================== */
-const QUICK_TAGS = ["Travel", "Food", "Adventure", "Culture", "Tips", "Nature"];
+const QUICK_TAGS = ["Travel", "Picnic", "Adventure", "Culture", "Tips", "Nature"];
 
 const containerVariants = {
   hidden: { opacity: 0 },

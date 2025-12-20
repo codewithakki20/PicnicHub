@@ -1,9 +1,19 @@
-// middlewares/error.middleware.js
-export const errorHandler = (err, req, res, next) => {
-  console.error("🔥 ERROR:", err.stack || err);
+import logger from "../config/logger.js";
 
-  return res.status(err.statusCode || 500).json({
-    message: err.message || "Internal Server Error",
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+// GLOBAL ERROR HANDLER
+export const errorHandler = (err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const message =
+    err.message || "Something went wrong. Please try again.";
+
+  // Log (detailed in dev, clean in prod)
+  logger.error(message, err);
+
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    ...(process.env.NODE_ENV === "development" && {
+      stack: err.stack,
+    }),
   });
 };

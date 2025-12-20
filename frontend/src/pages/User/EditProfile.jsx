@@ -32,6 +32,8 @@ export default function EditProfile() {
     bio: "",
     college: "",
     branch: "",
+    course: "", // NEW
+    year: "", // NEW
   });
 
   const [avatar, setAvatar] = useState(null);
@@ -51,6 +53,8 @@ export default function EditProfile() {
         bio: reduxUser.bio || "",
         college: reduxUser.college || "",
         branch: reduxUser.branch || "",
+        course: reduxUser.course || "", // NEW
+        year: reduxUser.year || "", // NEW
       });
       setLoading(false);
       return;
@@ -64,6 +68,8 @@ export default function EditProfile() {
           bio: data.bio || "",
           college: data.college || "",
           branch: data.branch || "",
+          course: data.course || "", // NEW
+          year: data.year || "", // NEW
         });
       } catch (err) {
         if (err.response?.status === 401) {
@@ -109,6 +115,8 @@ export default function EditProfile() {
         bio: values.bio.trim(),
         college: values.college,
         branch: values.branch.trim(),
+        course: values.course.trim(), // NEW
+        year: values.year, // NEW
       };
 
       if (avatar) payload.avatarFile = avatar;
@@ -213,13 +221,50 @@ export default function EditProfile() {
               </select>
             </Field>
 
-            <Field label="Branch / Course" icon={GraduationCap}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Branch" icon={GraduationCap}>
+                <select
+                  value={values.branch}
+                  onChange={(e) =>
+                    setValues({ ...values, branch: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                >
+                  <option value="">Select Branch</option>
+                  <option value="Science">Science</option>
+                  <option value="Commerce">Commerce</option>
+                  <option value="Arts">Arts</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Pharmacy">Pharmacy</option>
+                  <option value="MBA">MBA</option>
+                  <option value="Others">Others</option>
+                </select>
+              </Field>
+
+              <Field label="Year" icon={GraduationCap}>
+                <select
+                  value={values.year}
+                  onChange={(e) =>
+                    setValues({ ...values, year: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                >
+                  <option value="">Select Year</option>
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                </select>
+              </Field>
+            </div>
+
+            <Field label="Course" icon={FileText}>
               <Input
-                value={values.branch}
+                value={values.course}
                 onChange={(e) =>
-                  setValues({ ...values, branch: e.target.value })
+                  setValues({ ...values, course: e.target.value })
                 }
-                placeholder="e.g. Computer Science, Mechanical"
+                placeholder="e.g. B.Tech, MCA"
                 className="rounded-xl"
               />
             </Field>

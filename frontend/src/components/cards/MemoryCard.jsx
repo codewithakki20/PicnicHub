@@ -33,6 +33,9 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
   const title = memory.title || "Untitled memory";
   const author = memory.uploaderId || memory.user || {};
 
+  const locObj = memory.locationId || memory.locationSnapshot || memory.location;
+  const locName = locObj?.name || (typeof locObj === "string" ? locObj : null);
+
   /* ---------------- LIKE STATE ---------------- */
   const [liked, setLiked] = useState(!!memory.isLiked);
   const [likes, setLikes] = useState(
@@ -173,14 +176,10 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
             Memory
           </span>
 
-          {memory.location && (
+          {locName && (
             <span className="bg-black/40 backdrop-blur px-3 py-1 rounded-full text-xs text-white flex items-center gap-1 max-w-[60%]">
               <MapPin size={12} className="text-green-400" />
-              <span className="truncate">
-                {typeof memory.location === "object"
-                  ? memory.location.name
-                  : memory.location}
-              </span>
+              <span className="truncate">{locName}</span>
             </span>
           )}
         </div>

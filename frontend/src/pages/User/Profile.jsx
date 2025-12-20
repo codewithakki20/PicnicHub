@@ -196,7 +196,7 @@ export default function Profile() {
                 </button>
               </div>
 
-              {(user.college || user.branch) && (
+              {(user.college || user.branch || user.course || user.year) && (
                 <div className="flex flex-wrap gap-3 mt-4">
                   {user.college && (
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-sm font-semibold">
@@ -204,10 +204,21 @@ export default function Profile() {
                       {user.college}
                     </div>
                   )}
+                  {user.course && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm font-semibold">
+                      <BookOpen size={14} />
+                      {user.course}
+                    </div>
+                  )}
                   {user.branch && (
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
                       <GraduationCap size={14} />
                       {user.branch}
+                    </div>
+                  )}
+                  {user.year && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm font-semibold">
+                      <span>🎓 {user.year}</span>
                     </div>
                   )}
                 </div>

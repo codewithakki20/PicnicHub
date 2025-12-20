@@ -24,13 +24,16 @@ export const getReel = async (id) => {
    ⬆️ CREATE / UPLOAD REEL
    Supports video + caption
 ========================================================== */
-export const createReel = async ({ videoFile, caption = "" }) => {
+export const createReel = async ({ videoFile, caption = "", locationId = "" }) => {
   if (!videoFile) throw new Error("Video file is required to upload a reel");
 
   const form = new FormData();
   form.append("video", videoFile);
   if (caption) {
     form.append("caption", caption);
+  }
+  if (locationId) {
+    form.append("locationId", locationId);
   }
 
   // Let axios automatically set Content-Type with boundary for FormData

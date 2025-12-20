@@ -1,5 +1,6 @@
 // src/pages/Admin/ManageLocations.jsx
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import adminApi from "../../api/adminApi";
 import getPublicUrl from "../../utils/getPublicUrl";
 import Spinner from "../../components/ui/Spinner";
@@ -15,8 +16,6 @@ import {
   Move,
   Pin,
   Edit,
-  Maximize2,
-  MapPin,
   BarChart2,
   Plus,
   AlertCircle,
@@ -41,6 +40,7 @@ import {
 } from "recharts";
 
 export default function ManageLocations() {
+  const navigate = useNavigate();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,19 +49,10 @@ export default function ManageLocations() {
   const [sort, setSort] = useState("newest");
 
   const [selected, setSelected] = useState([]);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [bulkPinOpen, setBulkPinOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryLocation, setGalleryLocation] = useState(null);
-
-  const [mapOpen, setMapOpen] = useState(false);
-  const [mapLocation, setMapLocation] = useState(null);
-
-  const [editOpen, setEditOpen] = useState(false);
-  const [editLocation, setEditLocation] = useState(null);
-  const [editPayload, setEditPayload] = useState({ name: "", description: "", lat: "", lng: "" });
 
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [analyticsLocation, setAnalyticsLocation] = useState(null);
@@ -122,31 +113,7 @@ export default function ManageLocations() {
   };
 
   const openEdit = (loc) => {
-    setEditLocation(loc);
-    setEditPayload({
-      name: loc.name || "",
-      description: loc.description || "",
-      lat: loc.coords?.lat || "",
-      lng: loc.coords?.lng || "",
-    });
-    setEditOpen(true);
-  };
-
-  const saveEdit = async () => {
-    try {
-      const payload = {
-        name: editPayload.name,
-        description: editPayload.description,
-        lat: Number(editPayload.lat),
-        lng: Number(editPayload.lng),
-      };
-      await adminApi.updateLocation(editLocation._id, payload);
-      setEditOpen(false);
-      setEditLocation(null);
-      await load();
-    } catch {
-      setError("Failed to save location.");
-    }
+    navigate(`/admin/locations/edit/${loc._id}`);
   };
 
   const openAnalytics = async (loc) => {
@@ -180,34 +147,33 @@ export default function ManageLocations() {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-emerald-50 via-amber-50 to-orange-50">
+      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <Spinner />
       </div>
     );
 
   return (
-    <div className="p-6 md:p-8 space-y-8 min-h-screen bg-gradient-to-br from-emerald-50 via-amber-50 to-orange-50">
+    <div className="p-6 md:p-8 space-y-8 min-h-screen bg-slate-50 dark:bg-slate-950">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-emerald-900 tracking-tight">
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             Manage Locations
           </h1>
-          <p className="text-amber-700 font-medium">
+          <p className="text-slate-500 dark:text-slate-400 font-medium">
             Search, edit, reorder & analyze locations
           </p>
         </div>
 
         <div className="flex gap-3">
-          <a
-            href="/admin/locations/create"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-white
-              bg-gradient-to-r from-emerald-600 to-emerald-500 hover:scale-[1.02] transition shadow-lg"
+          <Button
+            onClick={() => navigate("/admin/locations/create")}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg transition"
           >
             <Plus className="w-5 h-5" />
             Add Location
-          </a>
+          </Button>
           <Button variant="secondary" onClick={load}>
             Refresh
           </Button>
@@ -226,8 +192,7 @@ export default function ManageLocations() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl
-              focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-slate-900 dark:text-white"
             placeholder="Search name or description…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -237,8 +202,7 @@ export default function ManageLocations() {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="px-4 py-2 bg-white border border-slate-200 rounded-xl
-            focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-slate-900 dark:text-white"
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
@@ -248,26 +212,26 @@ export default function ManageLocations() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-emerald-100 rounded-3xl shadow-xl overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
         <DragDropContext onDragEnd={() => { }}>
           <Droppable droppableId="locations">
             {(p) => (
               <table ref={p.innerRef} {...p.droppableProps} className="w-full min-w-[900px]">
-                <thead className="bg-emerald-50 border-b border-emerald-100">
+                <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
                   <tr>
                     <th className="px-6 py-4"></th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase">Location</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase">Coordinates</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase">Status</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-emerald-700 uppercase">Actions</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Location</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Coordinates</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Status</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase">Actions</th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {paginated.map((loc, idx) => (
                     <Draggable key={loc._id} draggableId={loc._id} index={idx}>
                       {(d) => (
-                        <tr ref={d.innerRef} {...d.draggableProps} className="hover:bg-emerald-50/50">
+                        <tr ref={d.innerRef} {...d.draggableProps} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                           <td className="px-6 py-4">
                             <button onClick={() => toggleSelect(loc._id)}>
                               {selected.includes(loc._id)
@@ -281,17 +245,17 @@ export default function ManageLocations() {
                               <div {...d.dragHandleProps} className="cursor-grab text-slate-400">
                                 <Move className="w-4 h-4" />
                               </div>
-                              <div className="w-20 h-14 rounded-lg bg-slate-100 overflow-hidden border">
+                              <div className="w-14 h-14 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700">
                                 {loc.images?.[0] ? (
-                                  <img src={getPublicUrl(loc.images[0])} className="w-full h-full object-cover" />
+                                  <img src={getPublicUrl(loc.images[0])} className="w-full h-full object-cover" alt="" />
                                 ) : (
                                   <div className="flex items-center justify-center h-full text-slate-400">
-                                    <ImageIcon />
+                                    <ImageIcon size={20} />
                                   </div>
                                 )}
                               </div>
                               <div>
-                                <p className="font-bold text-slate-900">{loc.name}</p>
+                                <p className="font-bold text-slate-900 dark:text-white">{loc.name}</p>
                                 <p className="text-xs text-slate-500 line-clamp-1">{loc.description}</p>
                               </div>
                             </div>
@@ -303,8 +267,7 @@ export default function ManageLocations() {
 
                           <td className="px-6 py-4">
                             {loc.isPinned && (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full
-                                text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                 <Pin className="w-3 h-3" /> Pinned
                               </span>
                             )}
@@ -314,31 +277,31 @@ export default function ManageLocations() {
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => openGallery(loc)}
-                                className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
                                 title="View Gallery"
                               >
-                                <ImageIcon className="w-4 h-4 text-blue-600" />
+                                <ImageIcon className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => openAnalytics(loc)}
-                                className="p-2 hover:bg-emerald-50 rounded-lg transition-colors"
+                                className="p-2 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors"
                                 title="View Analytics"
                               >
-                                <BarChart2 className="w-4 h-4 text-emerald-600" />
+                                <BarChart2 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => openEdit(loc)}
-                                className="p-2 hover:bg-orange-50 rounded-lg transition-colors"
+                                className="p-2 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-colors"
                                 title="Edit Location"
                               >
-                                <Edit className="w-4 h-4 text-orange-600" />
+                                <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => setDeleteId(loc._id)}
-                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
                                 title="Delete Location"
                               >
-                                <Trash2 className="w-4 h-4 text-red-600" />
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -363,78 +326,10 @@ export default function ManageLocations() {
             <Trash2 className="w-8 h-8" />
           </div>
           <h3 className="text-xl font-bold text-slate-900 mb-2">Delete this location?</h3>
-          <p className="text-slate-500 mb-6">This will permanently delete the location and remove related references.</p>
+          <p className="text-slate-500 mb-6">This will permanently delete the location.</p>
           <div className="flex justify-center gap-3">
             <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Edit Modal */}
-      <Modal open={editOpen} onClose={() => { setEditOpen(false); setEditLocation(null); }} title="Edit Location">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">Name</label>
-            <input
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-              value={editPayload.name}
-              onChange={(e) => setEditPayload(p => ({ ...p, name: e.target.value }))}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">Description</label>
-            <textarea
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-              rows={3}
-              value={editPayload.description}
-              onChange={(e) => setEditPayload(p => ({ ...p, description: e.target.value }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">Latitude</label>
-              <input
-                type="number"
-                step="any"
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                value={editPayload.lat}
-                onChange={(e) => setEditPayload(p => ({ ...p, lat: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">Longitude</label>
-              <input
-                type="number"
-                step="any"
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                value={editPayload.lng}
-                onChange={(e) => setEditPayload(p => ({ ...p, lng: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="h-48 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative">
-            <iframe
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              scrolling="no"
-              marginHeight="0"
-              marginWidth="0"
-              src={`https://maps.google.com/maps?q=${editPayload.lat || 0},${editPayload.lng || 0}&z=14&output=embed`}
-              className="w-full h-full opacity-75 hover:opacity-100 transition-opacity"
-            ></iframe>
-            <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold shadow-sm pointer-events-none">
-              {editPayload.lat && editPayload.lng ? `${editPayload.lat}, ${editPayload.lng}` : "No coordinates"}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={() => { setEditOpen(false); setEditLocation(null); }}>Cancel</Button>
-            <Button variant="primary" onClick={saveEdit}>Save Changes</Button>
           </div>
         </div>
       </Modal>

@@ -1,6 +1,6 @@
 // ========================================
 // controllers/memories.controller.js
-// Triggers restart
+// Triggers restart - 2025-12-20
 // ========================================
 import Memory from '../models/Memory.js';
 import Comment from '../models/Comment.js';
@@ -42,6 +42,7 @@ export const getMemories = async (req, res) => {
     console.log('Fetching memories...');
     const memories = await Memory.find(query)
       .populate('uploaderId', 'name avatarUrl')
+      .populate('locationId', 'name coords')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -88,6 +89,7 @@ export const getMemory = async (req, res) => {
   try {
     const memory = await Memory.findById(req.params.id)
       .populate('uploaderId', 'name avatarUrl')
+      .populate('locationId', 'name coords')
       .lean();
     if (!memory) return res.status(404).json({ message: 'Memory not found' });
 
@@ -257,17 +259,27 @@ export const updateMemory = async (req, res) => {
     const ownerId = (memory.userId || memory.uploaderId).toString();
     if (ownerId !== req.user._id.toString() && req.user.role !== 'admin') return res.status(403).json({ message: 'Not authorized to update this memory' });
 
-    const { title, description, tags, visibility } = req.body;
+    const { title, description, tags, visibility, year, locationId } = req.body;
     if (title) memory.title = title;
     if (description !== undefined) memory.description = description;
     if (tags) memory.tags = Array.isArray(tags) ? tags : tags.split(',');
     if (visibility) memory.visibility = visibility;
+    if (year) memory.year = parseInt(year);
+    if (locationId !== undefined) {
+      if (locationId && mongoose.Types.ObjectId.isValid(locationId)) {
+        memory.locationId = locationId;
+      } else {
+        console.warn(`Invalid or empty locationId provided for update: ${locationId}. Setting locationId to null.`);
+        memory.locationId = null;
+      }
+    }
 
     memory.updatedAt = new Date();
     await memory.save();
 
     res.json(memory);
   } catch (error) {
+    console.error("Update Memory Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -312,7 +324,7 @@ export const toggleLike = async (req, res) => {
       await memory.save();
 
       // Create Notification
-      const { createNotification } = await import('./notificationController.js');
+      const { createNotification } = await import('./notifications.controller.js');
       await createNotification({
         recipientId: memory.uploaderId, // or userId
         senderId: userId,
@@ -349,7 +361,7 @@ export const addComment = async (req, res) => {
     await memory.save();
 
     // Create Notification
-    const { createNotification } = await import('./notificationController.js');
+    const { createNotification } = await import('./notifications.controller.js');
     await createNotification({
       recipientId: memory.uploaderId,
       senderId: req.user._id,

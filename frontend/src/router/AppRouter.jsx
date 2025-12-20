@@ -6,6 +6,7 @@ import { Heart, MessageCircle } from "lucide-react";
 import Sidebar from "../components/admin/Sidebar";
 import MainSidebar from "../components/layout/MainSidebar";
 import BottomNav from "../components/layout/BottomNav";
+import TopNav from "../components/layout/TopNav";
 
 // Pages
 import Home from "../pages/Home";
@@ -23,6 +24,8 @@ import Memories from "../pages/Memories/Memories";
 import Notifications from "../pages/Notifications"; // Added Notifications
 
 import MemoryDetails from "../pages/Memories/MemoryDetails";
+import EditMemory from "../pages/Memories/EditMemory";
+import EditReel from "../pages/Reels/EditReel";
 
 
 // Reels
@@ -88,17 +91,12 @@ function AdminRoute({ children }) {
 function AppLayout({ children }) {
   return (
     <div className="min-h-screen bg-white md:bg-slate-50">
+
       {/* Desktop Sidebar */}
       <MainSidebar />
 
       {/* Mobile Top Header */}
-      <div className="md:hidden sticky top-0 bg-white z-40 px-4 py-3 border-b border-slate-100 flex justify-between items-center shadow-sm">
-        <span className="font-bold text-xl text-slate-900 tracking-tight">PicnicHub</span>
-        <div className="flex gap-4 text-slate-900">
-          <Heart size={24} />
-          <MessageCircle size={24} />
-        </div>
-      </div>
+      <TopNav />
 
       {/* Main Content Area */}
       <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
@@ -318,6 +316,28 @@ export default function AppRouter() {
             <ProtectedRoute>
               <AppLayout>
                 <UploadMemory />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/memories/edit/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EditMemory />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reels/edit/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EditReel />
               </AppLayout>
             </ProtectedRoute>
           }

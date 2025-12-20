@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import reelsApi from "../../api/reelsApi";
+import LocationSelect from "../../components/forms/LocationSelect";
 import {
+  MapPin,
   Film,
   Upload,
   AlertCircle,
@@ -16,6 +18,7 @@ export default function UploadReel() {
   const navigate = useNavigate();
 
   const [caption, setCaption] = useState("");
+  const [locationId, setLocationId] = useState("");
   const [video, setVideo] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [status, setStatus] = useState({ type: "", msg: "" });
@@ -54,6 +57,7 @@ export default function UploadReel() {
     try {
       await reelsApi.createReel({
         caption: caption.trim(),
+        locationId,
         videoFile: video,
       });
 
@@ -87,8 +91,8 @@ export default function UploadReel() {
         {/* STATUS ALERT */}
         {status.msg && (
           <div className={`flex items-center gap-3 p-4 rounded-2xl mb-6 border ${status.type === "success"
-              ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200"
-              : "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200"
+            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200"
+            : "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200"
             }`}>
             {status.type === "success" ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
             <span className="font-medium">{status.msg}</span>
@@ -158,6 +162,17 @@ export default function UploadReel() {
                   onChange={e => setCaption(e.target.value)}
                   rows={6}
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none dark:text-white text-lg"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                  <MapPin size={16} className="text-emerald-500" /> Location
+                </label>
+                <LocationSelect
+                  value={locationId}
+                  onChange={setLocationId}
+                  placeholder="Where was this filmed?"
                 />
               </div>
 

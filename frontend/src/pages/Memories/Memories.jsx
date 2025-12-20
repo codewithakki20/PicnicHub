@@ -168,8 +168,8 @@ export default function Memories() {
             <button
               onClick={() => setViewMode("masonry")}
               className={`p-2 rounded-lg ${viewMode === "masonry"
-                  ? "bg-white shadow-sm"
-                  : "text-slate-400"
+                ? "bg-white shadow-sm"
+                : "text-slate-400"
                 }`}
             >
               <Grid size={20} />
@@ -177,8 +177,8 @@ export default function Memories() {
             <button
               onClick={() => setViewMode("list")}
               className={`p-2 rounded-lg ${viewMode === "list"
-                  ? "bg-white shadow-sm"
-                  : "text-slate-400"
+                ? "bg-white shadow-sm"
+                : "text-slate-400"
                 }`}
             >
               <ListIcon size={20} />

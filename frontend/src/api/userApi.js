@@ -12,7 +12,7 @@ export const fetchMe = async () => {
 /* ==========================================================
    ✏️ UPDATE PROFILE (Supports Name + Bio + College + Branch + Avatar)
 ========================================================== */
-export const updateMe = async ({ name, bio, college, branch, avatarFile } = {}) => {
+export const updateMe = async ({ name, bio, college, branch, course, year, avatarFile } = {}) => {
   const form = new FormData();
 
   if (name !== undefined && name !== null) {
@@ -26,6 +26,12 @@ export const updateMe = async ({ name, bio, college, branch, avatarFile } = {}) 
   }
   if (branch !== undefined && branch !== null) {
     form.append("branch", branch);
+  }
+  if (course !== undefined && course !== null) {
+    form.append("course", course);
+  }
+  if (year !== undefined && year !== null) {
+    form.append("year", year);
   }
 
   // avatar upload (middleware expects "image")

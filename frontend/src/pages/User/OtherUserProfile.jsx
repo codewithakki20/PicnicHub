@@ -57,7 +57,10 @@ export default function OtherUserProfile() {
     /* ================= LOAD USER ================= */
 
     useEffect(() => {
-        if (!id) return;
+        if (!id || id === "undefined") {
+            navigate("/404");
+            return;
+        }
 
         if (currentUser?._id === id) {
             navigate("/profile", { replace: true });
@@ -193,7 +196,7 @@ export default function OtherUserProfile() {
                                 </button>
                             </div>
 
-                            {(profileUser.college || profileUser.branch) && (
+                            {(profileUser.college || profileUser.branch || profileUser.course || profileUser.year) && (
                                 <div className="flex flex-wrap gap-3 pt-2">
                                     {profileUser.college && (
                                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-sm font-semibold">
@@ -201,10 +204,21 @@ export default function OtherUserProfile() {
                                             {profileUser.college}
                                         </div>
                                     )}
+                                    {profileUser.course && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm font-semibold">
+                                            <BookOpen size={14} />
+                                            {profileUser.course}
+                                        </div>
+                                    )}
                                     {profileUser.branch && (
                                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
                                             <GraduationCap size={14} />
                                             {profileUser.branch}
+                                        </div>
+                                    )}
+                                    {profileUser.year && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm font-semibold">
+                                            <span>🎓 {profileUser.year}</span>
                                         </div>
                                     )}
                                 </div>

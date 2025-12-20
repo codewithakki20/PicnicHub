@@ -4,8 +4,11 @@ import {
     MessageCircle,
     Send,
     MoreHorizontal,
+    Trash2,
+    Edit
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "../../context/AuthContext";
 
 import memoryApi from "../../api/memoryApi";
 import formatDate from "../../utils/formatDate";
@@ -21,8 +24,21 @@ const resolveUrl = (url) =>
 export default function FeedPost({ memory }) {
     const navigate = useNavigate();
 
+    const { user } = useAuthContext();
     const author = memory.uploaderId || memory.user || {};
     const authorId = author._id;
+    const isOwner = user?._id === authorId;
+    const [isDeleted, setIsDeleted] = useState(false);
+
+    const handleDelete = async () => {
+        if (!window.confirm("Delete this memory?")) return;
+        try {
+            await memoryApi.deleteMemory(memory._id);
+            setIsDeleted(true);
+        } catch {
+            alert("Delete failed");
+        }
+    };
 
     const [liked, setLiked] = useState(memory.isLikedByMe || false);
     const [likes, setLikes] = useState(
@@ -44,13 +60,15 @@ export default function FeedPost({ memory }) {
         }
     };
 
+    const locObj = memory.locationId || memory.locationSnapshot || memory.location;
     const locationName =
-        memory.locationName ||
-        (typeof memory.location === "object"
-            ? memory.location?.name
-            : memory.location);
+        locObj?.name ||
+        (typeof locObj === "string" ? locObj : null) ||
+        memory.locationName;
 
     /* ================= UI ================= */
+
+    if (isDeleted) return null;
 
     return (
         <article className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -88,10 +106,31 @@ export default function FeedPost({ memory }) {
                     </div>
                 </div>
 
-                <MoreHorizontal
-                    size={20}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
-                />
+                <div className="flex items-center gap-2">
+                    {isOwner ? (
+                        <>
+                            <button
+                                onClick={() => navigate(`/memories/edit/${memory._id}`)}
+                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
+                                title="Edit"
+                            >
+                                <Edit size={18} />
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-full text-slate-400 hover:text-rose-500 transition"
+                                title="Delete"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </>
+                    ) : (
+                        <MoreHorizontal
+                            size={20}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                        />
+                    )}
+                </div>
             </div>
 
             {/* MEDIA */}

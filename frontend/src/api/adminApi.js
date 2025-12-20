@@ -209,6 +209,12 @@ export const createBlog = async ({
   content,
   excerpt = "",
   tags = [],
+  category = "",
+  subtitle = "",
+  slug = "",
+  status = "draft",
+  readTime = "",
+  scheduledAt = "",
   coverFile = null,
 }) => {
   const form = new FormData();
@@ -216,10 +222,17 @@ export const createBlog = async ({
   form.append("title", title);
   form.append("content", content);
   form.append("excerpt", excerpt);
+  if (category) form.append("category", category);
+  if (subtitle) form.append("subtitle", subtitle);
+  if (slug) form.append("slug", slug);
+  if (status) form.append("status", status);
+  if (readTime) form.append("readTime", readTime);
+  if (scheduledAt) form.append("scheduledAt", scheduledAt);
+
   form.append("tags", Array.isArray(tags) ? tags.join(",") : tags);
 
   if (coverFile) {
-    form.append("image", coverFile); // backend expects "image"
+    form.append("image", coverFile);
   }
 
   const res = await client.post("/admin/blogs", form, {
@@ -229,23 +242,20 @@ export const createBlog = async ({
   return res.data;
 };
 
-export const updateBlog = async (
-  id,
-  { title, content, excerpt, tags = [], coverFile = null }
-) => {
+export const updateBlog = async (id, payload) => {
   if (!id) throw new Error("Blog ID required");
 
   const form = new FormData();
 
-  if (title !== undefined) form.append("title", title);
-  if (content !== undefined) form.append("content", content);
-  if (excerpt !== undefined) form.append("excerpt", excerpt);
-
-  if (tags !== undefined) {
-    form.append("tags", Array.isArray(tags) ? tags.join(",") : tags);
-  }
-
-  if (coverFile) form.append("image", coverFile);
+  Object.keys(payload).forEach((key) => {
+    if (key === "coverFile" && payload[key]) {
+      form.append("image", payload[key]);
+    } else if (key === "tags" && Array.isArray(payload[key])) {
+      form.append("tags", payload[key].join(","));
+    } else if (payload[key] !== undefined && payload[key] !== null) {
+      form.append(key, payload[key]);
+    }
+  });
 
   const res = await client.put(`/admin/blogs/${id}`, form, {
     headers: { "Content-Type": "multipart/form-data" },

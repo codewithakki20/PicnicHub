@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Heart, MessageCircle, Share2, MoreHorizontal, Volume2, VolumeX, ArrowUp, ArrowDown, X, Trash2 } from "lucide-react";
+import { Play, Heart, MessageCircle, Share2, MoreHorizontal, Volume2, VolumeX, ArrowUp, ArrowDown, X, Trash2, Edit, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../../context/AuthContext";
 import reelsApi from "../../api/reelsApi";
@@ -146,6 +146,9 @@ function ReelItem({ reel, isActive, index }) {
     }
   }, [isActive, isDeleted]);
 
+  const locObj = reel.locationId || reel.locationSnapshot || reel.location;
+  const locName = locObj?.name || (typeof locObj === "string" ? locObj : null) || reel.locationName;
+
   const toggleMute = (e) => {
     e.stopPropagation();
     setIsMuted(!isMuted);
@@ -196,6 +199,10 @@ function ReelItem({ reel, isActive, index }) {
       console.error("Failed to delete reel:", error);
       alert("Failed to delete reel");
     }
+  };
+
+  const handleEditReel = () => {
+    navigate(`/reels/edit/${reel._id || reel.id}`);
   };
 
   if (isDeleted) {
@@ -254,6 +261,14 @@ function ReelItem({ reel, isActive, index }) {
               <ReelFollowButton userId={reel.uploaderId?._id || reel.uploaderId || reel.userId} initialIsFollowing={reel.isFollowing} />
             </div>
 
+            {/* Location Pill */}
+            {locName && (
+              <div className="flex items-center gap-1 text-xs font-medium text-slate-200 mb-2 bg-white/10 backdrop-blur-md w-fit px-2 py-0.5 rounded-full pointer-events-auto">
+                <MapPin size={10} className="text-emerald-400" />
+                {locName}
+              </div>
+            )}
+
             {/* Caption */}
             <div className="max-w-[85%]">
               <p className="text-sm mb-3 drop-shadow-md leading-snug text-white">
@@ -289,7 +304,7 @@ function ReelItem({ reel, isActive, index }) {
             reel={reel}
             onClose={() => setShowOptions(false)}
             onDelete={handleDeleteReel}
-            onShare={handleShare}
+            onEdit={handleEditReel}
           />
         )}
 
@@ -511,7 +526,7 @@ function ReelFollowButton({ userId, initialIsFollowing }) {
 /* =========================
    OPTIONS DRAWER (Delete, Report, etc.)
 ========================= */
-function OptionsDrawer({ reel, onClose, onDelete, onShare }) {
+function OptionsDrawer({ reel, onClose, onDelete, onEdit }) {
   const { user } = useAuthContext();
   const userId = reel.uploaderId?._id || reel.uploaderId || reel.userId;
   const isOwner = user && (user._id === userId || user.id === userId);
@@ -531,25 +546,23 @@ function OptionsDrawer({ reel, onClose, onDelete, onShare }) {
 
         <div className="flex flex-col gap-1">
           {isOwner && (
-            <button
-              onClick={onDelete}
-              className="w-full p-4 text-center text-rose-600 font-bold hover:bg-rose-50 rounded-xl transition flex items-center justify-center gap-3"
-            >
-              <Trash2 size={20} />
-              Delete Reel
-            </button>
+            <>
+              <button
+                onClick={onEdit}
+                className="w-full p-4 text-center text-slate-900 font-bold hover:bg-slate-50 rounded-xl transition flex items-center justify-center gap-3"
+              >
+                <Edit size={20} />
+                Edit Reel
+              </button>
+              <button
+                onClick={onDelete}
+                className="w-full p-4 text-center text-rose-600 font-bold hover:bg-rose-50 rounded-xl transition flex items-center justify-center gap-3"
+              >
+                <Trash2 size={20} />
+                Delete Reel
+              </button>
+            </>
           )}
-
-          <button
-            onClick={() => {
-              onShare();
-              onClose();
-            }}
-            className="w-full p-4 text-center text-slate-900 font-medium hover:bg-slate-50 rounded-xl transition flex items-center justify-center gap-3"
-          >
-            <Share2 size={20} />
-            Share
-          </button>
 
           <button
             onClick={onClose}

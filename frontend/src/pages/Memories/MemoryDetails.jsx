@@ -10,6 +10,7 @@ import {
     MoreHorizontal,
     Send,
     Trash2,
+    Edit
 } from "lucide-react";
 
 import memoryApi from "../../api/memoryApi";
@@ -169,6 +170,9 @@ export default function MemoryDetails() {
     const authorId = author._id || author.id;
     const isOwner = user?._id === authorId;
 
+    const locObj = memory.locationId || memory.locationSnapshot || memory.location;
+    const locName = locObj?.name || (typeof locObj === "string" ? locObj : null);
+
     /* ================= UI ================= */
 
     return (
@@ -210,24 +214,30 @@ export default function MemoryDetails() {
                                 >
                                     {author.name || "Unknown User"}
                                 </h3>
-                                {memory.location && (
+                                {locName && (
                                     <p className="text-xs text-slate-500 flex items-center gap-1">
                                         <MapPin size={12} />
-                                        {typeof memory.location === "object"
-                                            ? memory.location.name
-                                            : memory.location}
+                                        {locName}
                                     </p>
                                 )}
                             </div>
                         </div>
 
                         {isOwner ? (
-                            <button
-                                onClick={handleDeleteMemory}
-                                className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full"
-                            >
-                                <Trash2 size={18} />
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => navigate(`/memories/edit/${id}`)}
+                                    className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900"
+                                >
+                                    <Edit size={18} />
+                                </button>
+                                <button
+                                    onClick={handleDeleteMemory}
+                                    className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </>
                         ) : (
                             <MoreHorizontal className="text-slate-400" />
                         )}

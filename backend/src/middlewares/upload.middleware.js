@@ -1,48 +1,85 @@
-// middlewares/upload.middleware.js
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
-// Storage
+// ENSURE UPLOAD DIR
+const UPLOAD_DIR = "uploads";
+
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+
+// STORAGE
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/");
+    cb(null, UPLOAD_DIR);
   },
 
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + unique + ext);
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeName = file.fieldname.replace(/\s+/g, "");
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+
+    cb(null, `${safeName}-${unique}${ext}`);
   },
 });
 
-// File filter
+
+//FILE FILTER
+const IMAGE_EXTS = [
+  "jpeg", "jpg", "png", "gif", "webp", "bmp", "svg", "ico",
+];
+
+const VIDEO_EXTS = [
+  "mp4", "mov", "avi", "webm", "mkv", "flv", "wmv",
+];
+
+const ALLOWED_MIME_TYPES = [
+  // images
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+  "image/svg+xml",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+
+  // videos
+  "video/mp4",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/webm",
+  "video/x-matroska",
+  "video/x-flv",
+  "video/x-ms-wmv",
+];
+
 const fileFilter = (req, file, cb) => {
-  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+  const ext = path.extname(file.originalname).slice(1).toLowerCase();
+  const isValidExt =
+    IMAGE_EXTS.includes(ext) || VIDEO_EXTS.includes(ext);
 
-  // Allowed image extensions
-  const allowedImageExts = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'];
-  // Allowed video extensions
-  const allowedVideoExts = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'flv', 'wmv'];
+  const isValidMime = ALLOWED_MIME_TYPES.includes(
+    file.mimetype.toLowerCase()
+  );
 
-  // Allowed MIME types
-  const allowedMimeTypes = [
-    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-    'image/bmp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon',
-    'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
-    'video/x-matroska', 'video/x-flv', 'video/x-ms-wmv'
-  ];
-
-  const hasValidExtension = allowedImageExts.includes(ext) || allowedVideoExts.includes(ext);
-  const hasValidMimeType = allowedMimeTypes.includes(file.mimetype.toLowerCase());
-
-  if (hasValidExtension && hasValidMimeType) {
-    cb(null, true);
-  } else {
-    cb(new Error(`Invalid file type. Only images and videos are allowed. Supported: ${allowedImageExts.join(', ').toUpperCase()}, ${allowedVideoExts.join(', ').toUpperCase()}`));
+  if (isValidExt && isValidMime) {
+    return cb(null, true);
   }
+
+  cb(
+    new Error(
+      `Invalid file type. Allowed images: ${IMAGE_EXTS.join(
+        ", "
+      )}. Allowed videos: ${VIDEO_EXTS.join(", ")}`
+    )
+  );
 };
 
-// Main upload handler
+
+//MULTER INSTANCE
 export const upload = multer({
   storage,
   fileFilter,
@@ -51,7 +88,11 @@ export const upload = multer({
   },
 });
 
-// Single image (optional - multer allows requests without file)
+
+
+// EXPORT HELPERS
+
+// Single image (optional)
 export const uploadImage = upload.single("image");
 
 // Single video

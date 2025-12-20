@@ -1,22 +1,49 @@
-import 'dotenv/config';
-import app from './app.js';
-import connectDB from './config/db.js';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import fs from 'fs';
+import "dotenv/config";
+import fs from "fs";
+import { join } from "path";
+import app from "./app.js";
+import connectDB from "./config/db.js";
+import logger from "./config/logger.js";
 
 
-connectDB();
+// BOOTSTRAP
+(async () => {
+  try {
+    // DB
+    await connectDB();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+    // Ensure uploads folder exists
+    const uploadsDir = join(process.cwd(), "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
 
-// Ensure uploads folder exists in root directory
-const uploadsDir = join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+    const PORT = process.env.PORT || 5000;
 
-const PORT = process.env.PORT || 5000;
+    const server = app.listen(PORT, "0.0.0.0", () => {
+      logger.success(`🚀 Server running on port ${PORT}`);
+    });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+    // GRACEFUL SHUTDOWN
+    const shutdown = (signal) => {
+      logger.warn(`🛑 Received ${signal}. Shutting down gracefully...`);
+
+      server.close(() => {
+        logger.success("✅ HTTP server closed");
+        process.exit(0);
+      });
+
+      // Force exit after 10s
+      setTimeout(() => {
+        logger.error("❌ Force shutdown");
+        process.exit(1);
+      }, 10_000);
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+  } catch (err) {
+    console.error("❌ Server failed to start:", err);
+    process.exit(1);
+  }
+})();

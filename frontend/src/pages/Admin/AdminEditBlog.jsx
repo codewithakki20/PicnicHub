@@ -49,7 +49,7 @@ export default function AdminEditBlog() {
   const navigate = useNavigate();
   const editor = useRef(null);
 
-  const categories = ["Travel", "Lifestyle", "Events", "Campus", "Tech"];
+  const categories = ["Travel", "Picnic", "Events", "Campus", "Tech", "Tips", "Nature", "Party", "Adventure", "College Life", "Others"];
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -138,7 +138,7 @@ export default function AdminEditBlog() {
     return () => {
       try {
         URL.revokeObjectURL(url);
-      } catch {}
+      } catch { }
     };
   }, [newCoverFile]);
 
@@ -248,7 +248,7 @@ export default function AdminEditBlog() {
       // clear local autosave after successful update
       try {
         localStorage.removeItem(localKey);
-      } catch {}
+      } catch { }
 
       navigate("/admin/blogs");
     } catch (err) {
@@ -264,7 +264,7 @@ export default function AdminEditBlog() {
     if (!window.confirm("Clear local draft for this blog?")) return;
     try {
       localStorage.removeItem(localKey);
-    } catch {}
+    } catch { }
     // reload original content from server
     window.location.reload();
   };

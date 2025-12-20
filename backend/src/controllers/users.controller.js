@@ -175,7 +175,7 @@ export const followUser = async (req, res) => {
 
       // Create Notification
       console.log("Creating notification...");
-      const { createNotification } = await import('./notificationController.js');
+      const { createNotification } = await import('./notifications.controller.js');
       await createNotification({
         recipientId: targetUser._id,
         senderId: req.user._id,

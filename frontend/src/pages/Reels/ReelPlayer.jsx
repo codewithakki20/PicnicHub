@@ -9,6 +9,9 @@ import {
   VolumeX,
   MoreHorizontal,
   X,
+  MapPin,
+  Trash2,
+  Edit
 } from "lucide-react";
 
 import reelsApi from "../../api/reelsApi";
@@ -92,6 +95,10 @@ function ReelSlide({ reel }) {
   const [liked, setLiked] = useState(!!reel.isLiked);
   const [likes, setLikes] = useState(reel.likes?.length || 0);
   const [showComments, setShowComments] = useState(false);
+  const isOwner = user && (user._id === (reel.uploaderId?._id || reel.uploaderId || reel.userId));
+
+  const locObj = reel.locationId;
+  const locName = locObj?.name || (typeof locObj === "string" ? locObj : null);
 
   const src = getPublicUrl(reel.video || reel.videoUrl);
 
@@ -203,6 +210,13 @@ function ReelSlide({ reel }) {
             </span>
           </div>
 
+          {locName && (
+            <div className="flex items-center gap-1 text-xs font-medium text-slate-200 mb-2 bg-white/10 backdrop-blur w-fit px-2 py-0.5 rounded-full">
+              <MapPin size={10} className="text-emerald-400" />
+              {locName}
+            </div>
+          )}
+
           <p className="text-sm opacity-90 line-clamp-2">
             {reel.caption}
           </p>
@@ -235,9 +249,36 @@ function ReelSlide({ reel }) {
             <Share2 size={26} />
           </button>
 
-          <button>
-            <MoreHorizontal size={24} />
-          </button>
+          {isOwner ? (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/reels/edit/${reel._id || reel.id}`);
+                }}
+                className="flex flex-col items-center"
+              >
+                <Edit size={26} />
+              </button>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!window.confirm("Delete reel?")) return;
+                  try {
+                    await reelsApi.deleteReel(reel._id || reel.id);
+                    window.location.reload();
+                  } catch { alert("Failed"); }
+                }}
+                className="flex flex-col items-center hover:text-rose-500"
+              >
+                <Trash2 size={26} className="text-rose-400" />
+              </button>
+            </>
+          ) : (
+            <button>
+              <MoreHorizontal size={24} />
+            </button>
+          )}
         </div>
       </div>
 

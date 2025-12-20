@@ -1,18 +1,23 @@
-// middlewares/auth.middleware.js
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// Protect (requires login)
+
+// HELPERS
+const getTokenFromHeader = (req) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    return req.headers.authorization.split(" ")[1];
+  }
+  return null;
+};
+
+
+// PROTECT (LOGIN REQUIRED)
 export const protect = async (req, res, next) => {
   try {
-    let token;
-
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
+    const token = getTokenFromHeader(req);
 
     if (!token) {
       return res.status(401).json({
@@ -20,57 +25,68 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (!decoded || !decoded.id) {
-      return res.status(401).json({ message: "Not authorized, invalid token payload" });
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({
+        message: "Not authorized, invalid or expired token",
+      });
     }
 
-    req.user = await User.findById(decoded.id).select("-passwordHash");
-
-    if (!req.user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!decoded?.id) {
+      return res.status(401).json({
+        message: "Not authorized, invalid token payload",
+      });
     }
 
-    if (req.user.isBanned) {
-      return res.status(403).json({ message: "Your account is banned" });
+    const user = await User.findById(decoded.id).select("-passwordHash");
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
+    if (user.isBanned) {
+      return res.status(403).json({
+        message: "Your account is banned",
+      });
+    }
+
+    req.user = user;
     next();
   } catch (err) {
     return res.status(401).json({
-      message: "Not authorized, token failed",
-      error: err.message,
+      message: "Not authorized",
     });
   }
 };
 
-// Optional Auth (no token required)
+
+// OPTIONAL AUTH (GUEST OK)
 export const optionalAuth = async (req, res, next) => {
+  const token = getTokenFromHeader(req);
+
+  if (!token) return next();
+
   try {
-    let token;
-
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id).select("-passwordHash");
-      } catch (err) {
-        // invalid token → continue as guest
-      }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded?.id) {
+      req.user = await User.findById(decoded.id).select("-passwordHash");
     }
-
-    next();
-  } catch (err) {
-    next();
+  } catch {
+    // ignore invalid token → continue as guest
   }
+
+  next();
 };
 
-// Admin only
+// ADMIN ONLY
 export const admin = (req, res, next) => {
-  if (req.user && req.user.role === "admin") return next();
-  return res.status(403).json({ message: "Admin access required" });
+  if (req.user?.role === "admin") return next();
+
+  return res.status(403).json({
+    message: "Admin access required",
+  });
 };

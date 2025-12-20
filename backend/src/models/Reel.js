@@ -14,6 +14,11 @@ const reelSchema = new mongoose.Schema(
       required: true,
     },
 
+    locationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Location",
+    },
+
     likesCount: { type: Number, default: 0 },
     commentsCount: { type: Number, default: 0 },
 

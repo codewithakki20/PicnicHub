@@ -60,7 +60,7 @@ export default function BottomNav() {
 
             {/* PROFILE */}
             <Link
-                to={user ? `/user/${user._id}` : "/auth/login"}
+                to={user ? "/profile" : "/auth/login"}
                 className={`p-2 ${isActive("/user/") ? activeClass : inactiveClass}`}
             >
                 {user?.avatarUrl || user?.avatar ? (

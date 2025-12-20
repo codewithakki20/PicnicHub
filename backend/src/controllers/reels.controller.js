@@ -4,6 +4,7 @@
 import Reel from '../models/Reel.js';
 import Like from '../models/Like.js';
 import User from '../models/User.js';
+import Location from '../models/Location.js';
 import path from 'path';
 import { uploadVideo as uploadVideoToCloud, getVideoThumbnailUrl } from '../config/cloudinary.js';
 
@@ -25,6 +26,7 @@ export const getReels = async (req, res) => {
 
     const reels = await Reel.find(query)
       .populate('uploaderId', 'name username avatarUrl')
+      .populate('locationId', 'name coords')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -49,6 +51,7 @@ export const getReel = async (req, res) => {
   try {
     const reel = await Reel.findById(req.params.id)
       .populate('uploaderId', 'name username avatarUrl')
+      .populate('locationId', 'name coords')
       .lean();
 
     if (!reel) return res.status(404).json({ message: 'Reel not found' });
@@ -68,6 +71,9 @@ export const getReel = async (req, res) => {
 export const createReel = async (req, res) => {
   try {
     const { caption } = req.body;
+    let { locationId } = req.body;
+    if (locationId === 'undefined' || locationId === 'null' || locationId === '') locationId = null;
+
     const user = await User.findById(req.user._id);
     if (!req.file) return res.status(400).json({ message: 'Please upload a video' });
 
@@ -88,6 +94,7 @@ export const createReel = async (req, res) => {
       videoUrl,
       coverImage,
       caption: caption || '',
+      locationId: locationId || null,
       uploaderId: req.user._id,
     });
 
@@ -118,7 +125,7 @@ export const toggleReelLike = async (req, res) => {
     await reel.save();
 
     // Create Notification
-    const { createNotification } = await import('./notificationController.js');
+    const { createNotification } = await import('./notifications.controller.js');
     await createNotification({
       recipientId: reel.uploaderId,
       senderId: userId,
@@ -178,8 +185,11 @@ export const updateReel = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this reel' });
     }
 
-    const { caption } = req.body;
+    const { caption, locationId } = req.body;
     if (caption !== undefined) reel.caption = caption;
+    if (locationId !== undefined) {
+      reel.locationId = (locationId === 'undefined' || locationId === 'null' || locationId === '') ? null : locationId;
+    }
 
     await reel.save();
     res.json(reel);
@@ -253,7 +263,7 @@ export const addComment = async (req, res) => {
     await reel.save();
 
     // Create Notification
-    const { createNotification } = await import('./notificationController.js');
+    const { createNotification } = await import('./notifications.controller.js');
     await createNotification({
       recipientId: reel.uploaderId,
       senderId: req.user._id,

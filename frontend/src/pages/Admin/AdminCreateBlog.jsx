@@ -37,7 +37,7 @@ export default function AdminCreateBlog() {
   const navigate = useNavigate();
   const editor = useRef(null);
 
-  const blogCategories = ["Travel", "Lifestyle", "Events", "Campus", "Tech"];
+  const blogCategories = ["Travel", "Picnic", "Events", "Campus", "Tech", "Tips", "Nature", "Party", "Adventure", "College Life", "Others"];
 
   const [formData, setFormData] = useState({
     title: "",
@@ -117,6 +117,9 @@ export default function AdminCreateBlog() {
         tags: formData.tags,
         status: formData.status,
         slug: formData.slug,
+        status: formData.status,
+        category: formData.category,
+        readTime: readTime,
         scheduledAt:
           formData.status === "scheduled" ? formData.scheduledAt : undefined,
         coverFile: file,
