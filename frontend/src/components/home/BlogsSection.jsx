@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ArrowRight } from "lucide-react";
 
 import blogApi from "../../api/blogApi";
 import getPublicUrl from "../../utils/getPublicUrl";
@@ -35,9 +35,11 @@ export default function BlogsSection() {
 
                 <Link
                     to="/blogs"
-                    className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+                    className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide
+                     text-primary-600 dark:text-primary-400 hover:text-primary-700 transition"
                 >
                     See all
+                    <ArrowRight size={14} />
                 </Link>
             </div>
 

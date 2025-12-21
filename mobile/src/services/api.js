@@ -10,7 +10,7 @@ import Constants from 'expo-constants';
 export const BASE_URL =
     Constants.expoConfig?.extra?.apiUrl ||
     Constants.manifest?.extra?.apiUrl ||
-    'http://192.168.31.117:5000/api/v1';
+    'http://10.26.247.120:5000/api/v1';
 
 const isDev = __DEV__;
 
@@ -112,6 +112,12 @@ export const createMemory = (formData) =>
         headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data);
 
+
+export const updateMemory = (id, formData) =>
+    api.put(`/memories/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data);
+
 export const likeMemory = (id) =>
     api.post(`/memories/${id}/like`).then(r => r.data);
 
@@ -159,6 +165,11 @@ export const likeReel = (id) =>
 
 export const createReel = (formData) =>
     api.post('/reels', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data);
+
+export const updateReel = (id, formData) =>
+    api.put(`/reels/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data);
 
@@ -223,8 +234,14 @@ export const changePassword = (currentPassword, newPassword) =>
    LOCATIONS
 ------------------------------------------ */
 
-export const getLocations = () =>
-    api.get('/locations').then(r => r.data);
+export const getLocations = (params) =>
+    api.get('/locations', { params }).then(r => r.data);
+
+export const getLocation = (id) =>
+    api.get(`/locations/${id}`).then(r => r.data);
+
+export const searchLocations = (query) =>
+    api.get('/locations/search', { params: { query } }).then(r => r.data);
 
 export const getAvatarUrl = (url) => {
     if (!url) return "https://via.placeholder.com/200";
@@ -234,3 +251,4 @@ export const getAvatarUrl = (url) => {
 };
 
 export default api;
+

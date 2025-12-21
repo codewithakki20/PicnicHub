@@ -40,7 +40,7 @@ export default function FeedPost({ memory }) {
         }
     };
 
-    const [liked, setLiked] = useState(memory.isLikedByMe || false);
+    const [liked, setLiked] = useState(memory.isLiked || false);
     const [likes, setLikes] = useState(
         memory.likesCount ?? memory.likes?.length ?? 0
     );

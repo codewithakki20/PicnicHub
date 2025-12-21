@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { MapPin } from "lucide-react";
 import blogApi from "../../api/blogApi";
 import Spinner from "../../components/ui/Spinner";
 import getPublicUrl from "../../utils/getPublicUrl";
@@ -74,6 +75,13 @@ export default function BlogDetails() {
             <span className="px-4 py-2 bg-white rounded-full border border-slate-200 shadow-sm">
               📅 {formatDate(blog.createdAt)}
             </span>
+
+            {blog.location && (
+              <span className="flex items-center gap-1.5 px-4 py-2 bg-white rounded-full border border-slate-200 shadow-sm text-green-700 font-medium">
+                <MapPin size={16} />
+                {blog.location.name || blog.location}
+              </span>
+            )}
 
             {blog.tags?.map((tag, i) => (
               <span

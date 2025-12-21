@@ -7,6 +7,8 @@ import {
     TouchableOpacity,
     Pressable,
     Image,
+    Modal,
+    TouchableWithoutFeedback,
 } from "react-native";
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from "@expo/vector-icons";
@@ -25,9 +27,11 @@ const ReelsCards = ({
     onShare,
     onProfilePress,
     onDelete,
+    onEdit,
 }) => {
     const videoRef = useRef(null);
     const [paused, setPaused] = useState(false);
+    const [menuVisible, setMenuVisible] = useState(false);
     const lastTap = useRef(0);
 
     // 🔐 Safe user normalization
@@ -109,6 +113,33 @@ const ReelsCards = ({
                 style={styles.gradientBottom}
             />
 
+            {/* 📍 LOCATION & MENU */}
+            {(item.location || onEdit || onDelete) && (
+                <View style={[styles.topRightInfo, { flexDirection: 'column', alignItems: 'flex-end', gap: 10 }]}>
+                    {/* Location Badge */}
+                    {!!item.location && (
+                        <View style={styles.locationBadge}>
+                            <Ionicons name="location-sharp" size={12} color="#fff" />
+                            <Text style={styles.locationText}>
+                                {typeof item.location === 'string'
+                                    ? item.location
+                                    : (item.location.name || item.location.address)}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Menu Button */}
+                    {(onEdit || onDelete) && (
+                        <TouchableOpacity
+                            style={styles.menuBtn}
+                            onPress={() => setMenuVisible(true)}
+                        >
+                            <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
+
             {/* 👉 RIGHT ACTIONS */}
             <View style={styles.actions}>
                 {/* LIKE */}
@@ -173,12 +204,7 @@ const ReelsCards = ({
                     </TouchableOpacity>
 
                     {user._id === currentUser?._id ? (
-                        <TouchableOpacity
-                            style={[styles.followBtn, { backgroundColor: '#ff3b30' }]}
-                            onPress={() => onDelete(item)}
-                        >
-                            <Ionicons name="trash-outline" size={18} color="#fff" />
-                        </TouchableOpacity>
+                        <View style={{ width: 10 }} /> // Spacer if owner, menu is top right
                     ) : (
                         <TouchableOpacity
                             style={[
@@ -205,7 +231,48 @@ const ReelsCards = ({
                     </Text>
                 )}
             </View>
-        </Pressable>
+
+            <Modal
+                transparent={true}
+                visible={menuVisible}
+                animationType="fade"
+                onRequestClose={() => setMenuVisible(false)}
+            >
+                <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.menuContainer}>
+                            {onEdit && (
+                                <>
+                                    <TouchableOpacity
+                                        style={styles.menuItem}
+                                        onPress={() => {
+                                            setMenuVisible(false);
+                                            onEdit(item);
+                                        }}
+                                    >
+                                        <Ionicons name="create-outline" size={20} color="#333" />
+                                        <Text style={styles.menuText}>Edit</Text>
+                                    </TouchableOpacity>
+                                    <View style={styles.menuDivider} />
+                                </>
+                            )}
+                            {onDelete && (
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        setMenuVisible(false);
+                                        onDelete(item);
+                                    }}
+                                >
+                                    <Ionicons name="trash-outline" size={20} color="#d32f2f" />
+                                    <Text style={[styles.menuText, { color: '#d32f2f' }]}>Delete</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+        </Pressable >
     );
 };
 
@@ -232,6 +299,34 @@ const styles = StyleSheet.create({
         top: 0,
         height: 120,
         width: "100%",
+    },
+
+    topRightInfo: {
+        position: 'absolute',
+        top: 100, // Below header
+        right: 16,
+        alignItems: 'flex-end',
+    },
+
+    locationBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    locationText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+        marginLeft: 4,
+    },
+
+    menuBtn: {
+        padding: 8,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        borderRadius: 20,
     },
 
     gradientBottom: {
@@ -333,5 +428,40 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 20,
         marginTop: 4,
+    },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    menuContainer: {
+        backgroundColor: '#fff',
+        width: '70%',
+        borderRadius: 12,
+        paddingVertical: 8,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+    },
+    menuText: {
+        fontSize: 16,
+        marginLeft: 14,
+        color: '#333',
+        fontWeight: '500',
+    },
+    menuDivider: {
+        height: 1,
+        backgroundColor: '#f0f0f0',
+        marginHorizontal: 0,
     },
 });

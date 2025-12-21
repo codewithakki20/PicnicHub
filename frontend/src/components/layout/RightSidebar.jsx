@@ -25,17 +25,14 @@ export default function RightSidebar() {
         if (!user) return;
 
         userApi
-            .fetchAllUsers({ limit: 10 })
-            .then((res) => {
+            .getSuggestedUsers()
+            .then((list) => {
                 if (!mountedRef.current) return;
-
-                const list = (res.users || [])
-                    .filter((u) => u._id !== user._id)
-                    .slice(0, 5);
-
-                setSuggestions(list);
+                setSuggestions(list.slice(0, 5));
             })
-            .catch(() => { });
+            .catch((err) => {
+                console.error("Failed to load suggestions", err);
+            });
 
         return () => {
             mountedRef.current = false;
@@ -123,9 +120,14 @@ export default function RightSidebar() {
 function SuggestionRow({ user }) {
     const [following, setFollowing] = useState(false);
 
-    const handleFollow = () => {
-        // Optimistic UI (hook API later)
-        setFollowing(true);
+    const handleFollow = async () => {
+        try {
+            setFollowing(true); // Optimistic
+            await userApi.followUser(user._id);
+        } catch (error) {
+            console.error(error);
+            setFollowing(false); // Revert
+        }
     };
 
     return (

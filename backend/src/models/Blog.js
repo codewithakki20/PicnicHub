@@ -52,6 +52,11 @@ const blogSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    location: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Location",
+      required: false,
+    },
 
     tags: [{ type: String, trim: true }],
   },

@@ -55,24 +55,41 @@ const ReelViewerScreen = ({ route, navigation }) => {
         }
     };
 
-    const handleDelete = () => {
+    const handleOptions = () => {
         Alert.alert(
-            "Delete Reel",
-            "Are you sure you want to delete this reel?",
+            'Options',
+            null,
             [
-                { text: "Cancel", style: "cancel" },
                 {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteReel(data._id);
-                            navigation.goBack();
-                        } catch (error) {
-                            Alert.alert("Error", "Could not delete reel");
-                        }
+                    text: 'Edit',
+                    onPress: () => navigation.navigate("EditReel", { reel: data }),
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                        Alert.alert(
+                            "Delete Reel",
+                            "Are you sure you want to delete this reel?",
+                            [
+                                { text: "Cancel", style: "cancel" },
+                                {
+                                    text: "Delete",
+                                    style: "destructive",
+                                    onPress: async () => {
+                                        try {
+                                            await deleteReel(data._id);
+                                            navigation.goBack();
+                                        } catch (error) {
+                                            Alert.alert("Error", "Could not delete reel");
+                                        }
+                                    }
+                                }
+                            ]
+                        );
                     }
-                }
+                },
+                { text: 'Cancel', style: 'cancel' }
             ]
         );
     };
@@ -88,9 +105,20 @@ const ReelViewerScreen = ({ route, navigation }) => {
 
             <SafeAreaView style={styles.overlay}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-                        <Ionicons name="arrow-back" size={28} color="#fff" />
-                    </TouchableOpacity>
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+                            <Ionicons name="arrow-back" size={24} color="#fff" />
+                        </TouchableOpacity>
+
+                        {data.location && (
+                            <View style={styles.locationBadge}>
+                                <Ionicons name="location-sharp" size={12} color="#fff" />
+                                <Text style={styles.locationText}>
+                                    {data.location.name || data.location.address}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
 
                     <View style={styles.rightActions}>
                         <TouchableOpacity
@@ -99,7 +127,7 @@ const ReelViewerScreen = ({ route, navigation }) => {
                         >
                             <Ionicons
                                 name={muted ? "volume-mute" : "volume-high"}
-                                size={24}
+                                size={20}
                                 color="#fff"
                             />
                         </TouchableOpacity>
@@ -116,8 +144,8 @@ const ReelViewerScreen = ({ route, navigation }) => {
                         )}
 
                         {isOwner && (
-                            <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-                                <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+                            <TouchableOpacity onPress={handleOptions} style={styles.iconButton}>
+                                <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -177,6 +205,25 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: '700',
         fontSize: 13,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    locationBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    locationText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+        marginLeft: 4,
     },
     followingText: {
         color: '#fff',

@@ -14,6 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "../../components/ui/Select";
+import LocationSelect from "../../components/forms/LocationSelect";
 
 import getPublicUrl from "../../utils/getPublicUrl";
 import JoditEditor from "jodit-react";
@@ -62,7 +63,9 @@ export default function AdminEditBlog() {
     status: "draft", // draft | published | scheduled
     scheduledAt: "",
     slug: "",
+    slug: "",
     content: "",
+    location: "",
   });
 
   const [content, setContent] = useState("");
@@ -101,6 +104,7 @@ export default function AdminEditBlog() {
           scheduledAt: data.scheduledAt || "",
           slug: data.slug || slugify(data.title || ""),
           content: data.content || "",
+          location: data.location?._id || data.location || "",
         });
 
         setContent(data.content || "");
@@ -240,6 +244,7 @@ export default function AdminEditBlog() {
         status: formData.status,
         scheduledAt: formData.status === "scheduled" ? formData.scheduledAt : undefined,
         slug: formData.slug || slugify(formData.title),
+        location: formData.location,
       };
 
       // updateBlog expected to accept coverFile for multipart upload
@@ -459,6 +464,15 @@ export default function AdminEditBlog() {
                   setContent(newContent);
                   setFormData((f) => ({ ...f, content: newContent }));
                 }}
+              />
+            </div>
+
+            {/* LOCATION */}
+            <div>
+              <LocationSelect
+                label="Location (Optional)"
+                value={formData.location}
+                onChange={(val) => setFormData({ ...formData, location: val })}
               />
             </div>
 

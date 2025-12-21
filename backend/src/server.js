@@ -22,6 +22,7 @@ import logger from "./config/logger.js";
 
     const server = app.listen(PORT, "0.0.0.0", () => {
       logger.success(`🚀 Server running on port ${PORT}`);
+      console.log(`📡 Local Access: http://10.26.247.120:${PORT}`);
     });
 
     // GRACEFUL SHUTDOWN

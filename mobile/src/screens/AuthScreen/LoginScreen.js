@@ -36,6 +36,24 @@ const LoginScreen = ({ navigation }) => {
                         const email = v.email.trim().toLowerCase();
                         await login(email, v.password);
                     } catch (e) {
+                        const status = e.response?.status;
+                        if (status === 403) {
+                            Alert.alert(
+                                "Account not verified",
+                                "Please verify your email to continue.",
+                                [
+                                    {
+                                        text: "Verify Now",
+                                        onPress: () =>
+                                            navigation.navigate("OtpVerify", {
+                                                email: v.email.trim().toLowerCase(),
+                                            }),
+                                    },
+                                ]
+                            );
+                            return;
+                        }
+
                         const msg =
                             e.response?.data?.message ||
                             "Something went wrong. Try again.";

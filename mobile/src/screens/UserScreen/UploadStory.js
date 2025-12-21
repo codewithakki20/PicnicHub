@@ -4,23 +4,19 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    TextInput,
     Image,
-    ScrollView,
     Alert,
     ActivityIndicator,
+    StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { MotiView, MotiText } from "moti";
+import { MotiView } from "moti";
 
 import { createStory } from "../../services/api";
 
 const UploadStoryScreen = ({ navigation }) => {
-    const isStory = true;
-
-    const [desc, setDesc] = useState("");
     const [image, setImage] = useState(null);
     const [hasPermission, setHasPermission] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -49,8 +45,8 @@ const UploadStoryScreen = ({ navigation }) => {
         try {
             const res = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
-                quality: 1,
-                allowsEditing: true,
+                quality: 0.8,
+                allowsEditing: true, // Stories are usually full screen, but editing allows cropping
                 aspect: [9, 16],
             });
 
@@ -72,13 +68,15 @@ const UploadStoryScreen = ({ navigation }) => {
 
         try {
             const formData = new FormData();
-            formData.append("description", desc);
+            // Story model only expects mediaUrl and mediaType. 
+            // The backend upload middleware handles the file.
 
             formData.append("image", {
                 uri: image.uri,
                 name: "story.jpg",
                 type: "image/jpeg",
             });
+            formData.append("mediaType", "image");
 
             await createStory(formData);
 
@@ -94,92 +92,84 @@ const UploadStoryScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="#000" />
+
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="close" size={28} color="#222" />
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.closeBtn}
+                >
+                    <Ionicons name="close" size={24} color="#fff" />
                 </TouchableOpacity>
-
                 <Text style={styles.headerTitle}>Add to Story</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
+            <View style={styles.content}>
+                {image ? (
+                    // PREVIEW STATE
+                    <View style={styles.previewContainer}>
+                        <Image
+                            source={{ uri: image.uri }}
+                            style={styles.previewImage}
+                            resizeMode="cover"
+                        />
+                        <TouchableOpacity
+                            style={styles.retryBtn}
+                            onPress={() => setImage(null)}
+                        >
+                            <Ionicons name="reload" size={20} color="#fff" />
+                            <Text style={styles.retryText}>Replace</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    // EMPTY STATE
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={pickImage}
+                        style={styles.uploadArea}
+                    >
+                        <MotiView
+                            from={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            style={styles.circleIcon}
+                        >
+                            <Ionicons name="image-outline" size={40} color="#89CFF0" />
+                        </MotiView>
+
+                        <Text style={styles.uploadTitle}>Upload Photo</Text>
+                        <Text style={styles.uploadSubtitle}>
+                            Tap to browse in files
+                        </Text>
+
+                        <View style={styles.pill}>
+                            <Text style={styles.pillText}>JPG, PNG • Max 10MB</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Footer Action */}
+            <View style={styles.footer}>
                 <TouchableOpacity
                     disabled={loading || !image}
                     onPress={handleUpload}
+                    style={[
+                        styles.mainBtn,
+                        (!image || loading) && styles.disabledBtn
+                    ]}
                 >
                     {loading ? (
-                        <ActivityIndicator size="small" color="#34C759" />
+                        <ActivityIndicator color="#fff" />
                     ) : (
-                        <MotiText
-                            from={{ opacity: 0.6 }}
-                            animate={{ opacity: image ? 1 : 0.4 }}
-                            style={[
-                                styles.postText,
-                                !image && { color: "#aaa" },
-                            ]}
-                        >
-                            Share
-                        </MotiText>
+                        <>
+                            <Ionicons name="share-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                            <Text style={styles.mainBtnText}>Share to Story</Text>
+                        </>
                     )}
                 </TouchableOpacity>
             </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.content}>
-                    {/* Image Picker */}
-                    <TouchableOpacity
-                        onPress={pickImage}
-                        activeOpacity={0.85}
-                    >
-                        <MotiView
-                            from={{ opacity: 0, scale: 0.96 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 300 }}
-                            style={styles.imageBox}
-                        >
-                            {image ? (
-                                <>
-                                    <Image
-                                        source={{ uri: image.uri }}
-                                        style={styles.imagePreview}
-                                    />
-
-                                    <TouchableOpacity
-                                        style={styles.removeImageBtn}
-                                        onPress={() => setImage(null)}
-                                    >
-                                        <Ionicons
-                                            name="close"
-                                            size={18}
-                                            color="#fff"
-                                        />
-                                    </TouchableOpacity>
-                                </>
-                            ) : (
-                                <View style={styles.placeholderCenter}>
-                                    <Ionicons
-                                        name="image-outline"
-                                        size={42}
-                                        color="#aaa"
-                                    />
-                                    <Text style={styles.placeholderText}>
-                                        Tap to select photo
-                                    </Text>
-                                </View>
-                            )}
-                        </MotiView>
-                    </TouchableOpacity>
-
-                    {/* Caption */}
-                    <TextInput
-                        value={desc}
-                        onChangeText={setDesc}
-                        placeholder="Add a caption…"
-                        placeholderTextColor="#999"
-                        multiline
-                        style={styles.descInput}
-                    />
-                </View>
-            </ScrollView>
         </SafeAreaView>
     );
 };
@@ -191,78 +181,146 @@ export default UploadStoryScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: "#000",
     },
 
     header: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderColor: "#eee",
         alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+
+    closeBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "#1A1A1A",
+        alignItems: "center",
+        justifyContent: "center",
     },
 
     headerTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#333",
-    },
-
-    postText: {
         fontSize: 16,
-        fontWeight: "600",
-        color: "#34C759",
+        fontWeight: "700",
+        color: "#fff",
     },
 
     content: {
-        padding: 20,
-    },
-
-    imageBox: {
-        width: "100%",
-        height: 420,
-        aspectRatio: 9 / 16,
-        backgroundColor: "#f2f2f2",
-        borderRadius: 18,
+        flex: 1,
         justifyContent: "center",
-        borderWidth: 1,
-        borderColor: "#ddd",
-        overflow: "hidden",
-        marginBottom: 16,
-    },
-
-    placeholderCenter: {
         alignItems: "center",
+        paddingHorizontal: 20,
     },
 
-    placeholderText: {
-        marginTop: 8,
-        color: "#888",
+    // Empty State
+    uploadArea: {
+        alignItems: "center",
+        justifyContent: "center",
+        width: '100%',
+    },
+
+    circleIcon: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: "#111",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: "#222",
+    },
+
+    uploadTitle: {
+        fontSize: 20,
+        fontWeight: "700",
+        color: "#fff",
+        marginBottom: 8,
+    },
+
+    uploadSubtitle: {
         fontSize: 14,
+        color: "#888",
+        marginBottom: 24,
     },
 
-    imagePreview: {
-        width: "100%",
-        height: "100%",
-        resizeMode: "cover",
+    pill: {
+        backgroundColor: "#1A1A1A",
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#333",
     },
 
-    removeImageBtn: {
-        position: "absolute",
-        top: 12,
-        right: 12,
-        backgroundColor: "rgba(0,0,0,0.55)",
-        padding: 6,
+    pillText: {
+        color: "#ccc",
+        fontSize: 12,
+        fontWeight: "600",
+        letterSpacing: 0.5,
+    },
+
+    // Preview
+    previewContainer: {
+        width: '100%',
+        height: '80%',
+        borderRadius: 20,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#333',
+        position: 'relative',
+    },
+
+    previewImage: {
+        width: '100%',
+        height: '100%',
+    },
+
+    retryBtn: {
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
         borderRadius: 20,
     },
 
-    descInput: {
-        minHeight: 80,
-        maxHeight: 140,
-        textAlignVertical: "top",
+    retryText: {
+        color: '#fff',
+        marginLeft: 6,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+
+    // Footer
+    footer: {
+        padding: 20,
+        paddingBottom: 20,
+    },
+
+    mainBtn: {
+        backgroundColor: "#1A1A1A",
+        height: 56,
+        borderRadius: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "#333",
+    },
+
+    disabledBtn: {
+        opacity: 0.5,
+    },
+
+    mainBtnText: {
+        color: "#fff",
         fontSize: 16,
-        color: "#333",
+        fontWeight: "600",
     },
 });

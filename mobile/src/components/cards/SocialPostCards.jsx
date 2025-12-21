@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,9 @@ import {
     Image,
     TouchableOpacity,
     Dimensions,
+    Modal,
+    TouchableWithoutFeedback,
+    AppState,
 } from 'react-native';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -15,28 +18,51 @@ import { getAvatarUrl } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
-const SocialReelPlayer = ({ item, isActive }) => {
-    const player = useVideoPlayer(item.videoUrl, player => {
-        player.loop = true;
-        player.muted = true;
+/* ======================================================
+   REEL PLAYER
+====================================================== */
+
+const SocialReelPlayer = ({ item, isActive, onLike }) => {
+    const lastTap = useRef(0);
+
+    const player = useVideoPlayer(item.videoUrl, (p) => {
+        p.loop = true;
+        p.muted = true;
     });
 
-    React.useEffect(() => {
-        if (isActive) {
-            player.play();
-        } else {
-            player.pause();
-        }
+    // Play / pause based on visibility
+    useEffect(() => {
+        isActive ? player.play() : player.pause();
     }, [isActive, player]);
+
+    // Pause when app goes background
+    useEffect(() => {
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state !== 'active') player.pause();
+        });
+        return () => sub.remove();
+    }, [player]);
+
+    // Double tap to like
+    const handleTap = () => {
+        const now = Date.now();
+        if (now - lastTap.current < 300) {
+            onLike?.();
+        }
+        lastTap.current = now;
+    };
 
     return (
         <>
-            <VideoView
-                player={player}
-                style={styles.media}
-                contentFit="cover"
-                nativeControls={false}
-            />
+            <TouchableWithoutFeedback onPress={handleTap}>
+                <VideoView
+                    player={player}
+                    style={styles.media}
+                    contentFit="cover"
+                    nativeControls={false}
+                />
+            </TouchableWithoutFeedback>
+
             <View style={styles.reelBadge}>
                 <Ionicons name="videocam" size={12} color="#fff" />
                 <Text style={styles.reelBadgeText}>REEL</Text>
@@ -44,6 +70,10 @@ const SocialReelPlayer = ({ item, isActive }) => {
         </>
     );
 };
+
+/* ======================================================
+   MAIN POST CARD
+====================================================== */
 
 const SocialPostCards = ({
     item,
@@ -55,15 +85,14 @@ const SocialPostCards = ({
     onShare,
     onProfilePress,
     onFollow,
+    onEdit,
+    onDelete,
 }) => {
+    const [menuVisible, setMenuVisible] = useState(false);
 
-    // 🔒 SAFE USER NORMALIZATION (MOST IMPORTANT)
-    const rawUser = item.user || item.uploaderId;
-
-    const user =
-        typeof rawUser === 'object' && rawUser !== null
-            ? rawUser
-            : {};
+    /* ---------- USER NORMALIZATION ---------- */
+    const rawUser = item.user || item.uploaderId || item.authorId;
+    const user = typeof rawUser === 'object' && rawUser !== null ? rawUser : {};
 
     const avatar = getAvatarUrl(
         user.avatarUrl ||
@@ -79,14 +108,21 @@ const SocialPostCards = ({
         item.uploaderName ||
         'user';
 
+    /* ---------- DATE ---------- */
     const date = new Date(item.createdAt);
     const day = date.getDate();
-    const month = date
-        .toLocaleString('default', { month: 'short' })
-        .toUpperCase();
+    const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
 
-    const isLiked = !!item.isLiked;
-    const likeCount = Number(item.likes) || 0;
+    /* ---------- OPTIMISTIC LIKE ---------- */
+    const [liked, setLiked] = useState(!!item.isLiked);
+    const [likes, setLikes] = useState(Number(item.likes) || 0);
+
+    const handleLike = () => {
+        setLiked((v) => !v);
+        setLikes((c) => (liked ? c - 1 : c + 1));
+        onLike?.();
+    };
+
     const commentCount = item.comments?.length || 0;
 
     return (
@@ -98,7 +134,7 @@ const SocialPostCards = ({
         >
             <TouchableOpacity activeOpacity={0.95} onPress={onPress}>
 
-                {/* HEADER */}
+                {/* ================= HEADER ================= */}
                 <View style={styles.headerRow}>
                     <TouchableOpacity
                         style={styles.userInfo}
@@ -112,13 +148,11 @@ const SocialPostCards = ({
 
                             {!!item.location && (
                                 <View style={styles.locationRow}>
-                                    <Ionicons
-                                        name="location-sharp"
-                                        size={10}
-                                        color="#777"
-                                    />
+                                    <Ionicons name="location-sharp" size={10} color="#777" />
                                     <Text style={styles.locationText}>
-                                        {item.location?.address || item.location?.name}
+                                        {typeof item.location === 'string'
+                                            ? item.location
+                                            : item.location?.address || item.location?.name}
                                     </Text>
                                 </View>
                             )}
@@ -126,66 +160,142 @@ const SocialPostCards = ({
                     </TouchableOpacity>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={styles.dateText}>
-                            {day} {month}
-                        </Text>
+                        <Text style={styles.dateText}>{day} {month}</Text>
+
                         {onFollow && (
                             <TouchableOpacity
                                 style={[
                                     styles.miniFollowBtn,
-                                    user.isFollowing && styles.miniFollowingBtn
+                                    user.isFollowing && styles.miniFollowingBtn,
                                 ]}
                                 onPress={onFollow}
                             >
-                                <Text style={[
-                                    styles.miniFollowText,
-                                    user.isFollowing && styles.miniFollowingText
-                                ]}>
+                                <Text
+                                    style={[
+                                        styles.miniFollowText,
+                                        user.isFollowing && styles.miniFollowingText,
+                                    ]}
+                                >
                                     {user.isFollowing ? 'Following' : 'Follow'}
                                 </Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {(onEdit || onDelete) && (
+                            <TouchableOpacity
+                                style={{ marginLeft: 10, padding: 4 }}
+                                onPress={() => setMenuVisible(true)}
+                            >
+                                <Ionicons name="ellipsis-vertical" size={16} color="#555" />
                             </TouchableOpacity>
                         )}
                     </View>
                 </View>
 
-                {/* MEDIA */}
+                {/* ================= MENU ================= */}
+                <Modal
+                    transparent
+                    visible={menuVisible}
+                    animationType="fade"
+                    onRequestClose={() => setMenuVisible(false)}
+                >
+                    <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.menuContainer}>
+                                {onEdit && (
+                                    <TouchableOpacity
+                                        style={styles.menuItem}
+                                        onPress={() => {
+                                            setMenuVisible(false);
+                                            onEdit(item);
+                                        }}
+                                    >
+                                        <Ionicons name="create-outline" size={20} />
+                                        <Text style={styles.menuText}>Edit</Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                {onDelete && (
+                                    <>
+                                        <View style={styles.menuDivider} />
+                                        <TouchableOpacity
+                                            style={styles.menuItem}
+                                            onPress={() => {
+                                                setMenuVisible(false);
+                                                onDelete(item);
+                                            }}
+                                        >
+                                            <Ionicons name="trash-outline" size={20} color="#d32f2f" />
+                                            <Text style={[styles.menuText, { color: '#d32f2f' }]}>
+                                                Delete
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </>
+                                )}
+                            </View>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </Modal>
+
+                {/* ================= MEDIA ================= */}
                 <View style={styles.mediaContainer}>
                     {type === 'reel' ? (
-                        <SocialReelPlayer item={item} isActive={isActive} />
-                    ) : (
-                        <Image
-                            source={{
-                                uri:
-                                    item.thumbnailUrl ||
-                                    item.media?.[0]?.url ||
-                                    item.mediaUrl ||
-                                    item.image ||
-                                    'https://via.placeholder.com/500',
-                            }}
-                            style={styles.media}
+                        <SocialReelPlayer
+                            item={item}
+                            isActive={isActive}
+                            onLike={handleLike}
                         />
+                    ) : (
+                        <>
+                            <Image
+                                source={{
+                                    uri:
+                                        item.coverImage ||
+                                        item.thumbnailUrl ||
+                                        item.media?.[0]?.url ||
+                                        item.mediaUrl ||
+                                        item.image ||
+                                        'https://via.placeholder.com/500',
+                                }}
+                                style={styles.media}
+                            />
+
+                            {type === 'blog' && (
+                                <View
+                                    style={[
+                                        styles.reelBadge,
+                                        { backgroundColor: 'rgba(25,118,210,0.85)' },
+                                    ]}
+                                >
+                                    <Ionicons name="document-text" size={12} color="#fff" />
+                                    <Text style={styles.reelBadgeText}>BLOG</Text>
+                                </View>
+                            )}
+                        </>
                     )}
                 </View>
 
-                {/* FOOTER */}
+                {/* ================= FOOTER ================= */}
                 <View style={styles.footer}>
                     {(item.title || item.caption || item.description) && (
-                        <Text style={styles.caption} numberOfLines={2}>
-                            <Text style={styles.captionUsername}>@{username} </Text>
+                        <Text style={styles.caption} numberOfLines={3}>
+                            <Text style={styles.captionUsername} onPress={onProfilePress}>
+                                @{username}{' '}
+                            </Text>
                             {item.title || item.caption || item.description}
                         </Text>
                     )}
 
                     <View style={styles.actionsRow}>
                         <View style={styles.leftActions}>
-                            <TouchableOpacity onPress={onLike} style={styles.actionButton}>
+                            <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
                                 <Ionicons
-                                    name={isLiked ? 'heart' : 'heart-outline'}
+                                    name={liked ? 'heart' : 'heart-outline'}
                                     size={24}
-                                    color={isLiked ? '#ff3b30' : '#262626'}
+                                    color={liked ? '#ff3b30' : '#262626'}
                                 />
-                                {likeCount > 0 && (
-                                    <Text style={styles.actionText}>{likeCount}</Text>
+                                {likes > 0 && (
+                                    <Text style={styles.actionText}>{likes}</Text>
                                 )}
                             </TouchableOpacity>
 
@@ -193,11 +303,7 @@ const SocialPostCards = ({
                                 onPress={onComment}
                                 style={styles.actionButton}
                             >
-                                <Ionicons
-                                    name="chatbubble-outline"
-                                    size={22}
-                                    color="#262626"
-                                />
+                                <Ionicons name="chatbubble-outline" size={22} />
                                 {commentCount > 0 && (
                                     <Text style={styles.actionText}>{commentCount}</Text>
                                 )}
@@ -207,11 +313,7 @@ const SocialPostCards = ({
                                 onPress={onShare}
                                 style={styles.actionButton}
                             >
-                                <Ionicons
-                                    name="paper-plane-outline"
-                                    size={22}
-                                    color="#262626"
-                                />
+                                <Ionicons name="paper-plane-outline" size={22} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -224,6 +326,10 @@ const SocialPostCards = ({
 
 export default SocialPostCards;
 
+/* ======================================================
+   STYLES
+====================================================== */
+
 const styles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
@@ -231,20 +337,13 @@ const styles = StyleSheet.create({
         borderBottomColor: '#f0f0f0',
         marginBottom: 16,
     },
-
     headerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 10,
     },
-
-    userInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-
+    userInfo: { flexDirection: 'row', alignItems: 'center' },
     avatar: {
         width: 36,
         height: 36,
@@ -252,41 +351,12 @@ const styles = StyleSheet.create({
         marginRight: 10,
         backgroundColor: '#eee',
     },
-
-    username: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#262626',
-    },
-
-    locationRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 2,
-    },
-
-    locationText: {
-        fontSize: 11,
-        color: '#777',
-        marginLeft: 3,
-    },
-
-    dateText: {
-        fontSize: 12,
-        color: '#999',
-    },
-
-    mediaContainer: {
-        width,
-        height: width,
-        backgroundColor: '#eee',
-    },
-
-    media: {
-        width: '100%',
-        height: '100%',
-    },
-
+    username: { fontSize: 14, fontWeight: '600' },
+    locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    locationText: { fontSize: 11, color: '#777', marginLeft: 3 },
+    dateText: { fontSize: 12, color: '#999' },
+    mediaContainer: { width, height: width, backgroundColor: '#eee' },
+    media: { width: '100%', height: '100%' },
     reelBadge: {
         position: 'absolute',
         top: 10,
@@ -298,54 +368,19 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 12,
     },
-
     reelBadgeText: {
         color: '#fff',
         fontSize: 10,
         fontWeight: '600',
         marginLeft: 4,
     },
-
-    footer: {
-        paddingHorizontal: 16,
-        paddingTop: 10,
-        paddingBottom: 12,
-    },
-
-    caption: {
-        fontSize: 14,
-        color: '#262626',
-        lineHeight: 20,
-    },
-
-    captionUsername: {
-        fontWeight: '600',
-    },
-
-    actionsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-
-    leftActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: 18,
-    },
-
-    actionText: {
-        marginLeft: 6,
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#262626',
-    },
+    footer: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 },
+    caption: { fontSize: 14, lineHeight: 20 },
+    captionUsername: { fontWeight: '600' },
+    actionsRow: { marginTop: 10 },
+    leftActions: { flexDirection: 'row', alignItems: 'center' },
+    actionButton: { flexDirection: 'row', alignItems: 'center', marginRight: 18 },
+    actionText: { marginLeft: 6, fontWeight: '600' },
     miniFollowBtn: {
         marginLeft: 8,
         paddingHorizontal: 10,
@@ -357,14 +392,27 @@ const styles = StyleSheet.create({
         backgroundColor: '#e8f5e9',
         borderWidth: 1,
         borderColor: '#c8e6c9',
-        paddingVertical: 3, // Adjust for border
     },
-    miniFollowText: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#2E7D32',
+    miniFollowText: { fontSize: 11, fontWeight: '700', color: '#2E7D32' },
+    miniFollowingText: { color: '#2E7D32' },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    miniFollowingText: {
-        color: '#2E7D32',
-    }
+    menuContainer: {
+        backgroundColor: '#fff',
+        width: '70%',
+        borderRadius: 12,
+        paddingVertical: 8,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+    },
+    menuText: { fontSize: 16, marginLeft: 14 },
+    menuDivider: { height: 1, backgroundColor: '#f0f0f0' },
 });

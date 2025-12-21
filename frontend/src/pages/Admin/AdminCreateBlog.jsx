@@ -14,6 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "../../components/ui/Select";
+import LocationSelect from "../../components/forms/LocationSelect";
 
 import { Eye, Plus, X } from "lucide-react";
 import JoditEditor from "jodit-react";
@@ -46,7 +47,9 @@ export default function AdminCreateBlog() {
     tags: [],
     status: "draft",
     scheduledAt: "",
+    scheduledAt: "",
     slug: "",
+    location: "",
   });
 
   const [content, setContent] = useState("");
@@ -119,6 +122,7 @@ export default function AdminCreateBlog() {
         slug: formData.slug,
         status: formData.status,
         category: formData.category,
+        location: formData.location,
         readTime: readTime,
         scheduledAt:
           formData.status === "scheduled" ? formData.scheduledAt : undefined,
@@ -320,6 +324,15 @@ export default function AdminCreateBlog() {
               </div>
 
               <JoditEditor ref={editor} value={content} onBlur={setContent} />
+            </div>
+
+            {/* LOCATION */}
+            <div>
+              <LocationSelect
+                label="Location"
+                value={formData.location}
+                onChange={(val) => setFormData({ ...formData, location: val })}
+              />
             </div>
 
             {/* ACTIONS */}

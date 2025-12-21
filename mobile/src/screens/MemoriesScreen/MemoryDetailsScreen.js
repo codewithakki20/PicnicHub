@@ -34,37 +34,24 @@ const MemoryDetailsScreen = ({ route, navigation }) => {
     const ownerId = getOwnerId(item);
     const isOwner = user?._id && ownerId && String(ownerId) === String(user._id);
 
-    const handleOptions = () => {
+    const handleDelete = async () => {
         Alert.alert(
-            'Options',
-            null,
+            "Delete Memory",
+            "Are you sure you want to delete this memory?",
             [
+                { text: "Cancel", style: "cancel" },
                 {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: () => {
-                        Alert.alert(
-                            "Delete Memory",
-                            "Are you sure you want to delete this memory?",
-                            [
-                                { text: "Cancel", style: "cancel" },
-                                {
-                                    text: "Delete",
-                                    style: "destructive",
-                                    onPress: async () => {
-                                        try {
-                                            await deleteMemory(item._id);
-                                            navigation.goBack();
-                                        } catch (error) {
-                                            Alert.alert("Error", "Could not delete memory");
-                                        }
-                                    },
-                                },
-                            ]
-                        );
-                    }
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteMemory(item._id);
+                            navigation.goBack();
+                        } catch (error) {
+                            Alert.alert("Error", "Could not delete memory");
+                        }
+                    },
                 },
-                { text: 'Cancel', style: 'cancel' }
             ]
         );
     };
@@ -96,11 +83,6 @@ const MemoryDetailsScreen = ({ route, navigation }) => {
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
 
-                {isOwner && (
-                    <TouchableOpacity onPress={handleOptions} style={{ padding: 4 }}>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
-                    </TouchableOpacity>
-                )}
             </View>
 
             <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
@@ -116,6 +98,8 @@ const MemoryDetailsScreen = ({ route, navigation }) => {
                         const id = item.user?._id || item.uploaderId?._id;
                         if (id) navigation.navigate("UserProfile", { userId: id });
                     }}
+                    onEdit={isOwner ? () => navigation.navigate("EditMemory", { memory: item }) : undefined}
+                    onDelete={isOwner ? handleDelete : undefined}
                 />
             </ScrollView>
         </SafeAreaView>

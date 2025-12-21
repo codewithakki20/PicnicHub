@@ -191,6 +191,7 @@ const MemoriesScreen = ({ navigation }) => {
                 }
                 onShare={() => handleShare(item)}
                 onDelete={handleDelete}
+                onEdit={(item) => navigation.navigate('EditMemory', { memory: item })}
             />
         </MotiView>
     );

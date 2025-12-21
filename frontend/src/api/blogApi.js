@@ -23,26 +23,23 @@ export const getBlog = async (slug) => {
    📌 CREATE BLOG (Admin)
    Supports file upload (cover image)
 ========================================================== */
-export const createBlog = async ({
-  title,
-  content,
-  excerpt = "",
-  tags = [],
-  coverFile = null,
-}) => {
+export const createBlog = async (data) => {
   const form = new FormData();
+  const { coverFile, tags, ...rest } = data;
 
-  form.append("title", title);
-  form.append("content", content);
-  form.append("excerpt", excerpt);
+  Object.keys(rest).forEach((key) => {
+    if (rest[key] !== undefined && rest[key] !== null) {
+      form.append(key, rest[key]);
+    }
+  });
 
-  // ensure tags becomes "tag1,tag2"
-  form.append(
-    "tags",
-    Array.isArray(tags) ? tags.join(",") : (tags || "")
-  );
+  if (tags) {
+    form.append("tags", Array.isArray(tags) ? tags.join(",") : tags);
+  }
 
-  if (coverFile) form.append("image", coverFile);
+  if (coverFile) {
+    form.append("image", coverFile);
+  }
 
   const res = await client.post("/blogs", form, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -55,25 +52,25 @@ export const createBlog = async ({
    📌 UPDATE BLOG (Admin)
    Supports partial updates + new image upload
 ========================================================== */
-export const updateBlog = async (
-  id,
-  { title, content, excerpt, tags = [], coverFile = null }
-) => {
+export const updateBlog = async (id, data) => {
   if (!id) throw new Error("Blog ID is required");
 
   const form = new FormData();
+  const { coverFile, tags, ...rest } = data;
 
-  if (title !== undefined) form.append("title", title);
-  if (content !== undefined) form.append("content", content);
-  if (excerpt !== undefined) form.append("excerpt", excerpt);
+  Object.keys(rest).forEach((key) => {
+    if (rest[key] !== undefined && rest[key] !== null) {
+      form.append(key, rest[key]);
+    }
+  });
 
-  if (tags !== undefined)
-    form.append(
-      "tags",
-      Array.isArray(tags) ? tags.join(",") : tags
-    );
+  if (tags !== undefined) {
+    form.append("tags", Array.isArray(tags) ? tags.join(",") : tags);
+  }
 
-  if (coverFile) form.append("image", coverFile);
+  if (coverFile) {
+    form.append("image", coverFile);
+  }
 
   const res = await client.put(`/blogs/${id}`, form, {
     headers: { "Content-Type": "multipart/form-data" },

@@ -1,4 +1,4 @@
-import { Calendar, User, ArrowRight, BookOpen } from "lucide-react";
+import { Calendar, User, ArrowRight, BookOpen, MapPin } from "lucide-react";
 import getPublicUrl from "../../utils/getPublicUrl";
 import formatDate from "../../utils/formatDate";
 
@@ -11,6 +11,7 @@ import formatDate from "../../utils/formatDate";
 export default function BlogCard({ blog, onClick }) {
   const cover = getPublicUrl(blog.coverImage);
   const author = blog.authorId?.name || blog.author?.name || "PicnicHub";
+  const locationName = blog.location?.name || (typeof blog.location === 'string' ? blog.location : null);
 
   return (
     <article
@@ -58,6 +59,16 @@ export default function BlogCard({ blog, onClick }) {
             <User size={12} />
             {author}
           </span>
+
+          {locationName && (
+            <>
+              <span className="opacity-60">•</span>
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                <MapPin size={12} />
+                {locationName}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Title */}

@@ -34,6 +34,7 @@ import {
     likeReel,
     getAvatarUrl,
     followUser,
+    getBlogs,
 } from "../services/api";
 
 import SocialPost from "../components/cards/SocialPostCards";
@@ -72,6 +73,7 @@ const HomeScreen = ({ navigation }) => {
     const [memories, setMemories] = useState([]);
     const [reels, setReels] = useState([]);
     const [stories, setStories] = useState([]);
+    const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeReelKey, setActiveReelKey] = useState(null);
@@ -80,10 +82,11 @@ const HomeScreen = ({ navigation }) => {
 
     const fetchHome = async () => {
         try {
-            const [memRes, reelRes, storyRes] = await Promise.all([
+            const [memRes, reelRes, storyRes, blogRes] = await Promise.all([
                 getMemories(),
                 getReels(),
                 getStories(),
+                getBlogs(),
             ]);
 
             setMemories(
@@ -101,6 +104,7 @@ const HomeScreen = ({ navigation }) => {
             );
 
             setStories(storyRes?.data || []);
+            setBlogs(blogRes?.blogs || []);
         } catch (e) {
             console.log("Home fetch error", e);
         } finally {
@@ -162,9 +166,7 @@ const HomeScreen = ({ navigation }) => {
                                             user: item, // Pass self as user
                                         });
                                     } else {
-                                        navigation.navigate("UploadMemory", {
-                                            isStory: true,
-                                        });
+                                        navigation.navigate("UploadStory");
                                     }
                                 } else {
                                     navigation.navigate("StoryView", {
@@ -183,15 +185,19 @@ const HomeScreen = ({ navigation }) => {
     /* ---------------- Feed ---------------- */
 
     const feed = useMemo(() => {
-        return [...memories, ...reels]
+        const _memories = memories.map(m => ({ ...m, type: 'memory' }));
+        const _reels = reels.map(r => ({ ...r, type: 'reel' }));
+        const _blogs = blogs.map(b => ({ ...b, type: 'blog' }));
+
+        return [..._memories, ..._reels, ..._blogs]
             .map(i => ({
                 key: i._id,
-                type: i.videoUrl ? "reel" : "memory",
+                type: i.type,
                 data: i,
                 date: new Date(i.createdAt),
             }))
             .sort((a, b) => b.date - a.date);
-    }, [memories, reels]);
+    }, [memories, reels, blogs]);
 
     /* ---------------- Viewability ---------------- */
 
@@ -339,18 +345,20 @@ const HomeScreen = ({ navigation }) => {
                                         "Check this out on PicnicHub 🌿",
                                 })
                             }
-                            onPress={() =>
-                                navigation.navigate(
-                                    item.type === "reel"
-                                        ? "ReelViewer"
-                                        : "MemoryDetails",
-                                    { data: item.data }
-                                )
-                            }
+                            onPress={() => {
+                                if (item.type === "reel")
+                                    navigation.navigate("ReelViewer", { data: item.data });
+                                else if (item.type === "blog")
+                                    navigation.navigate("BlogDetails", { blog: item.data });
+                                else
+                                    navigation.navigate("MemoryDetails", { data: item.data });
+                            }}
                             onProfilePress={() => {
                                 const id =
                                     item.data.user?._id ||
-                                    item.data.uploaderId?._id;
+                                    item.data.uploaderId?._id ||
+                                    item.data.authorId?._id ||
+                                    item.data.authorId;
                                 if (id)
                                     navigation.navigate("UserProfile", {
                                         userId: id,

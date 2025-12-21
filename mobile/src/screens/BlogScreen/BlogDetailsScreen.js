@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -6,7 +6,9 @@ import {
     Dimensions,
     TouchableOpacity,
     Share,
+    StatusBar,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
     useAnimatedScrollHandler,
@@ -17,33 +19,45 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import RenderHtml from 'react-native-render-html';
+import { useWindowDimensions } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = 300;
 
+/* ======================================================
+   BLOG DETAILS
+====================================================== */
+
 const BlogDetailsScreen = ({ route, navigation }) => {
     const { blog } = route.params;
     const insets = useSafeAreaInsets();
+    const { width: contentWidth } = useWindowDimensions();
 
+    /* ---------------- STATE ---------------- */
+    const [bookmarked, setBookmarked] = useState(!!blog.isBookmarked);
+
+    /* ---------------- ANIMATION VALUES ---------------- */
     const scrollY = useSharedValue(0);
     const contentHeight = useSharedValue(1);
     const containerHeight = useSharedValue(1);
 
-    const [bookmarked, setBookmarked] = useState(false);
-
+    /* ---------------- SCROLL HANDLER ---------------- */
     const scrollHandler = useAnimatedScrollHandler({
-        onScroll: e => {
+        onScroll: (e) => {
             scrollY.value = e.contentOffset.y;
         },
     });
 
+    /* ---------------- HEADER IMAGE ---------------- */
     const imageStyle = useAnimatedStyle(() => ({
         transform: [
             {
                 scale: interpolate(
                     scrollY.value,
                     [-120, 0, HEADER_HEIGHT],
-                    [1.45, 1, 1],
+                    [1.4, 1, 1],
                     Extrapolate.CLAMP
                 ),
             },
@@ -51,80 +65,116 @@ const BlogDetailsScreen = ({ route, navigation }) => {
                 translateY: interpolate(
                     scrollY.value,
                     [-120, 0, HEADER_HEIGHT],
-                    [-50, 0, HEADER_HEIGHT * 0.45],
+                    [-60, 0, HEADER_HEIGHT * 0.45],
                     Extrapolate.CLAMP
                 ),
             },
         ],
     }));
 
+    /* ---------------- PROGRESS BAR ---------------- */
     const progressStyle = useAnimatedStyle(() => {
-        const maxScroll = contentHeight.value - containerHeight.value;
+        const maxScroll = Math.max(
+            1,
+            contentHeight.value - containerHeight.value
+        );
+
         return {
             width: interpolate(
                 scrollY.value,
-                [0, maxScroll > 0 ? maxScroll : 1],
+                [0, maxScroll],
                 [0, width],
                 Extrapolate.CLAMP
             ),
         };
     });
 
-    const onShare = async () => {
+    /* ---------------- SHARE ---------------- */
+    const onShare = useCallback(async () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
         await Share.share({
             message: `${blog.title}\n\nRead this on PicnicHub 🌿`,
         });
-    };
+    }, [blog.title]);
 
-    const readingTime = Math.max(
-        1,
-        Math.round((blog.content?.length || 0) / 1000)
-    );
+    /* ---------------- BOOKMARK ---------------- */
+    const onBookmark = useCallback(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setBookmarked((v) => !v);
+
+        // 🔗 Hook backend here if needed
+        // blogApi.toggleBookmark(blog._id)
+    }, []);
+
+    /* ---------------- META ---------------- */
+    const readingTime = useMemo(() => {
+        const text = blog.content || blog.description || '';
+        return Math.max(1, Math.round(text.length / 1000));
+    }, [blog.content, blog.description]);
+
+    const coverImage =
+        blog.coverImage ||
+        blog.image ||
+        blog.thumbnail ||
+        'https://via.placeholder.com/600';
 
     return (
         <View style={styles.container}>
-            {/* Progress */}
+            <StatusBar barStyle="light-content" translucent />
+
+            {/* ================= PROGRESS ================= */}
             <Animated.View style={[styles.progressBar, progressStyle]} />
 
-            {/* Header Image */}
+            {/* ================= HEADER IMAGE ================= */}
             <Animated.Image
-                source={{
-                    uri:
-                        blog.coverImage ||
-                        blog.image ||
-                        blog.thumbnail ||
-                        'https://via.placeholder.com/600',
-                }}
+                source={{ uri: coverImage }}
                 style={[styles.headerImage, imageStyle]}
             />
 
-            {/* Gradient Overlay */}
+            {/* ================= GRADIENT ================= */}
             <LinearGradient
                 colors={['rgba(0,0,0,0.55)', 'transparent']}
                 style={styles.headerOverlay}
             />
 
-            {/* Back */}
+            {/* ================= BACK ================= */}
             <TouchableOpacity
                 style={[styles.backBtn, { top: insets.top + 12 }]}
                 onPress={() => navigation.goBack()}
+                activeOpacity={0.8}
             >
                 <Ionicons name="chevron-back" size={26} color="#fff" />
             </TouchableOpacity>
 
-            {/* Actions */}
+            {/* ================= ACTIONS ================= */}
             <View style={[styles.actions, { top: insets.top + 12 }]}>
+                <TouchableOpacity
+                    style={styles.iconBtn}
+                    onPress={onBookmark}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons
+                        name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+                        size={22}
+                        color="#fff"
+                    />
+                </TouchableOpacity>
 
-                <TouchableOpacity style={styles.iconBtn} onPress={onShare}>
+                <TouchableOpacity
+                    style={styles.iconBtn}
+                    onPress={onShare}
+                    activeOpacity={0.8}
+                >
                     <Ionicons name="share-social-outline" size={22} color="#fff" />
                 </TouchableOpacity>
             </View>
 
-            {/* Content */}
+            {/* ================= CONTENT ================= */}
             <Animated.ScrollView
                 onScroll={scrollHandler}
                 onContentSizeChange={(_, h) => (contentHeight.value = h)}
-                onLayout={e =>
+                onLayout={(e) =>
                     (containerHeight.value = e.nativeEvent.layout.height)
                 }
                 scrollEventThrottle={16}
@@ -146,9 +196,28 @@ const BlogDetailsScreen = ({ route, navigation }) => {
                         {new Date(blog.createdAt).toLocaleDateString()}
                     </Text>
 
-                    <Text style={styles.body}>
-                        {blog.content || blog.description || 'No content available.'}
-                    </Text>
+                    <RenderHtml
+                        contentWidth={contentWidth}
+                        source={{
+                            html:
+                                blog.content ||
+                                blog.description ||
+                                '<p>No content available.</p>',
+                        }}
+                        tagsStyles={{
+                            p: {
+                                fontSize: 17,
+                                lineHeight: 28,
+                                color: '#333',
+                                marginBottom: 12,
+                            },
+                            h1: { fontSize: 24, fontWeight: 'bold', marginVertical: 12 },
+                            h2: { fontSize: 22, fontWeight: 'bold', marginVertical: 12 },
+                            strong: { fontWeight: '700', color: '#000' },
+                            span: { fontSize: 17, lineHeight: 28, color: '#333' },
+                            img: { marginVertical: 10, borderRadius: 8 },
+                        }}
+                    />
                 </View>
             </Animated.ScrollView>
         </View>
@@ -157,10 +226,15 @@ const BlogDetailsScreen = ({ route, navigation }) => {
 
 export default BlogDetailsScreen;
 
-/* ---------------- Styles ---------------- */
+/* ======================================================
+   STYLES
+====================================================== */
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
 
     progressBar: {
         position: 'absolute',

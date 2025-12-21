@@ -178,6 +178,7 @@ const ReelsScreen = ({ navigation }) => {
                 if (userId)
                     navigation.navigate("UserProfile", { userId });
             }}
+            onEdit={(item) => navigation.navigate("UploadReel", { reel: item, isEdit: true })}
         />
     );
 

@@ -5,26 +5,29 @@ import {
   Heart,
   MessageCircle,
   Send,
-  X,
   Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../../context/AuthContext";
 import memoryApi from "../../api/memoryApi";
 import formatDate from "../../utils/formatDate";
-
 import getPublicUrl from "../../utils/getPublicUrl";
 
 /* ======================================================
-   MEMORY CARD
-   - minimal = grid / masonry
-   - default = feed card
+   MEMORY CARD — NEW UI/UX
 ====================================================== */
 
-export default function MemoryCard({ memory, onClick, minimal = false, aspectRatio = "aspect-square", className }) {
+export default function MemoryCard({
+  memory,
+  onClick,
+  minimal = false,
+  aspectRatio = "aspect-square",
+  className = "",
+}) {
   const { user } = useAuthContext();
   const navigate = useNavigate();
 
+  /* ---------------- DATA ---------------- */
   const imageSrc =
     memory.media?.[0]?.url ||
     memory.images?.[0] ||
@@ -32,11 +35,14 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
 
   const title = memory.title || "Untitled memory";
   const author = memory.uploaderId || memory.user || {};
+  const locObj =
+    memory.locationId || memory.locationSnapshot || memory.location;
+  const locName =
+    locObj?.name || (typeof locObj === "string" ? locObj : null);
 
-  const locObj = memory.locationId || memory.locationSnapshot || memory.location;
-  const locName = locObj?.name || (typeof locObj === "string" ? locObj : null);
+  const id = memory._id || memory.id;
 
-  /* ---------------- LIKE STATE ---------------- */
+  /* ---------------- LIKE (OPTIMISTIC) ---------------- */
   const [liked, setLiked] = useState(!!memory.isLiked);
   const [likes, setLikes] = useState(
     memory.likesCount || memory.likes?.length || 0
@@ -51,10 +57,7 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
     memory.commentsCount || comments.length || 0
   );
 
-  const id = memory._id || memory.id;
-
-  /* ---------------- HANDLERS ---------------- */
-
+  /* ---------------- HELPERS ---------------- */
   const requireAuth = () => {
     if (!user) {
       navigate("/auth/login");
@@ -73,7 +76,7 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
 
     if (next) {
       setLikeAnim(true);
-      setTimeout(() => setLikeAnim(false), 700);
+      setTimeout(() => setLikeAnim(false), 600);
     }
 
     try {
@@ -111,22 +114,23 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
   };
 
   /* ======================================================
-     MINIMAL CARD (Masonry / Grid)
+     MINIMAL / MASONRY CARD
 ====================================================== */
 
   if (minimal) {
     return (
       <div
         onClick={onClick}
-        className={`relative ${aspectRatio} rounded-2xl overflow-hidden cursor-pointer group bg-slate-100 dark:bg-slate-800 mb-6 break-inside-avoid ${className || ""}`}
+        className={`relative ${aspectRatio} rounded-3xl overflow-hidden cursor-pointer group bg-slate-100 dark:bg-slate-800 mb-6 break-inside-avoid ${className}`}
       >
         <img
           src={getPublicUrl(imageSrc)}
           alt={title}
-          className={`w-full ${aspectRatio === "aspect-auto" ? "h-auto" : "h-full object-cover"} transition-transform duration-700 group-hover:scale-110`}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
 
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4 text-white font-semibold z-10">
+        {/* Glass overlay */}
+        <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-6 text-white font-semibold">
           <span className="flex items-center gap-1">
             <Heart size={16} fill="white" /> {likes}
           </span>
@@ -139,17 +143,17 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
   }
 
   /* ======================================================
-     FULL FEED CARD
+     FULL FEED CARD (NEW UX)
 ====================================================== */
 
   return (
     <article
       onClick={onClick}
       onDoubleClick={toggleLike}
-      className={`bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col ${className || ""}`}
+      className={`group bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col ${className}`}
     >
-      {/* IMAGE */}
-      <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-800 overflow-hidden">
+      {/* ================= MEDIA ================= */}
+      <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={getPublicUrl(imageSrc)}
           alt={title}
@@ -157,34 +161,31 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
         />
 
         {/* Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-        {/* Like Animation */}
+        {/* Like burst */}
         <div
           className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-300 ${likeAnim ? "opacity-100 scale-100" : "opacity-0 scale-75"
             }`}
         >
-          <Heart
-            size={88}
-            className="fill-white text-white drop-shadow-xl"
-          />
+          <Heart size={90} className="fill-white text-white drop-shadow-2xl" />
         </div>
 
-        {/* Header Badges */}
+        {/* Top badges */}
         <div className="absolute top-4 left-4 right-4 flex justify-between">
-          <span className="bg-white/20 backdrop-blur px-3 py-1 rounded-full text-xs text-white font-semibold">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold text-white bg-white/20 backdrop-blur">
             Memory
           </span>
 
           {locName && (
-            <span className="bg-black/40 backdrop-blur px-3 py-1 rounded-full text-xs text-white flex items-center gap-1 max-w-[60%]">
+            <span className="max-w-[65%] truncate px-3 py-1 rounded-full text-xs text-white bg-black/40 backdrop-blur flex items-center gap-1">
               <MapPin size={12} className="text-green-400" />
-              <span className="truncate">{locName}</span>
+              {locName}
             </span>
           )}
         </div>
 
-        {/* Title + Date */}
+        {/* Title */}
         <div className="absolute bottom-4 left-4 right-4 text-white">
           <h3 className="text-xl font-bold line-clamp-1 drop-shadow">
             {title}
@@ -196,13 +197,13 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
         </div>
       </div>
 
-      {/* CONTENT */}
+      {/* ================= BODY ================= */}
       <div className="p-5 flex flex-col flex-1">
-        <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 mb-4">
+        <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 mb-4">
           {memory.description || "A beautiful picnic moment 🌿"}
         </p>
 
-        {/* COMMENTS */}
+        {/* ================= COMMENTS ================= */}
         {showComments && (
           <div
             className="border-t border-slate-200 dark:border-slate-800 pt-4 mb-4 space-y-3"
@@ -212,8 +213,8 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
               <input
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment…"
-                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900 text-slate-900 dark:text-white"
+                placeholder="Write something nice…"
+                className="flex-1 rounded-full px-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-green-300 dark:focus:ring-green-900"
                 onKeyDown={(e) => e.key === "Enter" && postComment()}
               />
               <button
@@ -231,56 +232,51 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
                 className="flex justify-between text-xs text-slate-600 dark:text-slate-400"
               >
                 <span>
-                  <b>{c.authorId?.name || c.authorName || "User"}:</b> {c.text}
+                  <b>{c.authorId?.name || c.authorName || "User"}:</b>{" "}
+                  {c.text}
                 </span>
 
-                {(user?.id === (c.authorId?._id || c.authorId) ||
-                  user?._id === (c.authorId?._id || c.authorId)) && (
-                    <button
-                      onClick={() => deleteComment(c._id)}
-                      className="text-slate-400 hover:text-rose-500"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
+                {(user?._id === (c.authorId?._id || c.authorId)) && (
+                  <button
+                    onClick={() => deleteComment(c._id)}
+                    className="hover:text-rose-500"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
         )}
 
-        {/* FOOTER */}
+        {/* ================= FOOTER ================= */}
         <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (author._id) {
-                  navigate(`/user/${author._id}`);
-                }
-              }}
-              className="flex items-center gap-2 hover:opacity-80 transition"
-            >
-              <img
-                src={getPublicUrl(author.avatar) || "/default-avatar.png"}
-                className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-                alt=""
-              />
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                {author.name || "Explorer"}
-              </span>
-            </button>
-          </div>
+          {/* Author */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              author._id && navigate(`/user/${author._id}`);
+            }}
+            className="flex items-center gap-2 hover:opacity-80"
+          >
+            <img
+              src={getPublicUrl(author.avatar) || "/default-avatar.png"}
+              className="w-8 h-8 rounded-full object-cover border"
+              alt=""
+            />
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {author.name || "Explorer"}
+            </span>
+          </button>
 
-          <div className="flex items-center gap-4 text-slate-400">
+          {/* Actions */}
+          <div className="flex items-center gap-5 text-slate-400">
             <button
               onClick={toggleLike}
               className={`flex items-center gap-1 transition ${liked ? "text-rose-500" : "hover:text-rose-500"
                 }`}
             >
-              <Heart
-                size={18}
-                className={liked ? "fill-rose-500" : ""}
-              />
+              <Heart size={18} className={liked ? "fill-rose-500" : ""} />
               <span className="text-xs font-bold">{likes}</span>
             </button>
 
@@ -292,9 +288,7 @@ export default function MemoryCard({ memory, onClick, minimal = false, aspectRat
               className="flex items-center gap-1 hover:text-green-600"
             >
               <MessageCircle size={18} />
-              <span className="text-xs font-bold">
-                {commentsCount}
-              </span>
+              <span className="text-xs font-bold">{commentsCount}</span>
             </button>
           </div>
         </div>

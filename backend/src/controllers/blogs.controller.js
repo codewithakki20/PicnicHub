@@ -17,6 +17,7 @@ export const getBlogs = async (req, res) => {
 
     const blogs = await Blog.find(filter)
       .populate('authorId', 'name avatarUrl')
+      .populate('location', 'name city state')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -40,7 +41,10 @@ export const getBlog = async (req, res) => {
       query = { $or: [{ slug }, { _id: slug }] };
     }
 
-    const blog = await Blog.findOne(query).populate('authorId', 'name avatarUrl').lean();
+    const blog = await Blog.findOne(query)
+      .populate('authorId', 'name avatarUrl')
+      .populate('location', 'name description')
+      .lean();
     if (!blog) return res.status(404).json({ message: 'Blog not found' });
     res.json(blog);
   } catch (error) {
@@ -51,7 +55,7 @@ export const getBlog = async (req, res) => {
 // CREATE blog (admin)
 export const createBlog = async (req, res) => {
   try {
-    const { title, content, excerpt, tags, subtitle, category, readTime } = req.body;
+    const { title, content, excerpt, tags, subtitle, category, readTime, location } = req.body;
     const coverImageLocal = req.file ? `/uploads/${req.file.filename}` : '';
     let coverImageUrl = coverImageLocal;
 
@@ -76,6 +80,7 @@ export const createBlog = async (req, res) => {
       coverImage: coverImageUrl,
       authorId: req.user._id,
       tags: tags ? (Array.isArray(tags) ? tags : tags.split(',')) : [],
+      location: location || undefined,
     });
 
     res.status(201).json(blog);
@@ -90,13 +95,14 @@ export const updateBlog = async (req, res) => {
     const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: 'Blog not found' });
 
-    const { title, content, excerpt, tags, subtitle, category, readTime } = req.body;
+    const { title, content, excerpt, tags, subtitle, category, readTime, location } = req.body;
     if (title) blog.title = title;
     if (content) blog.content = content;
     if (excerpt !== undefined) blog.excerpt = excerpt;
     if (subtitle !== undefined) blog.subtitle = subtitle;
     if (category !== undefined) blog.category = category;
     if (readTime !== undefined) blog.readTime = readTime;
+    if (location !== undefined) blog.location = location || undefined;
     if (tags) blog.tags = Array.isArray(tags) ? tags : tags.split(',');
 
     if (req.file) {

@@ -5,81 +5,96 @@ import {
     StyleSheet,
     TouchableOpacity,
     TextInput,
-    Image,
-    ActivityIndicator,
     ScrollView,
     Alert,
+    ActivityIndicator,
+    LogBox,
+    Image,
+    FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { MotiView, MotiText } from "moti";
+import { createMemory } from "../../services/api";
+import LocationSelect from "../../components/LocationSelect";
 
-import { createMemory, createStory } from "../../services/api";
+// Ignore specific warnings if necessary
+LogBox.ignoreLogs(["VirtualizedLists should never be nested"]);
 
-const UploadMemoryScreen = ({ navigation, route }) => {
-    const isStory = route.params?.isStory || false;
-
+const UploadMemoryScreen = ({ navigation }) => {
     const [title, setTitle] = useState("");
-    const [caption, setCaption] = useState("");
+    const [description, setDescription] = useState("");
+    const [year, setYear] = useState(new Date().getFullYear().toString());
     const [location, setLocation] = useState("");
-    const [image, setImage] = useState(null);
+    const [tags, setTags] = useState("");
+
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [selectedVideos, setSelectedVideos] = useState([]);
 
     const [loading, setLoading] = useState(false);
-    const [hasPermission, setHasPermission] = useState(null);
 
     /* ---------------- Permissions ---------------- */
+    const [permission, requestPermission] = ImagePicker.useMediaLibraryPermissions();
 
     useEffect(() => {
-        (async () => {
-            const { status } =
-                await ImagePicker.requestMediaLibraryPermissionsAsync();
-            setHasPermission(status === "granted");
-        })();
+        if (!permission) requestPermission();
     }, []);
 
-    /* ---------------- Pick Image ---------------- */
+    /* ---------------- Pickers ---------------- */
 
-    const pickImage = async () => {
-        if (loading) return;
-
-        if (!hasPermission) {
-            Alert.alert(
-                "Permission required",
-                "Please allow access to your photos."
-            );
-            return;
-        }
-
+    const pickImages = async () => {
         try {
-            const res = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                quality: 1,
-                allowsEditing: true,
-                aspect: isStory ? [9, 16] : [4, 5],
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'], // Use string directly
+                allowsMultipleSelection: true,
+                selectionLimit: 10,
+                quality: 0.8,
             });
 
-            if (!res.canceled) {
-                setImage(res.assets[0]);
+            if (!result.canceled) {
+                setSelectedImages(prev => [...prev, ...result.assets]);
             }
         } catch (e) {
-            console.log("Image picker error:", e);
-            Alert.alert("Error", "Could not open image picker.");
+            console.log(e);
         }
+    };
+
+    const pickVideos = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['videos'], // Use string directly
+                allowsMultipleSelection: true,
+                selectionLimit: 5,
+                quality: 1, // Videos usually don't have quality option in same way, but ok
+            });
+
+            if (!result.canceled) {
+                setSelectedVideos(prev => [...prev, ...result.assets]);
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    };
+
+    const removeImage = (uri) => {
+        setSelectedImages(prev => prev.filter(a => a.uri !== uri));
+    };
+
+    const removeVideo = (uri) => {
+        setSelectedVideos(prev => prev.filter(a => a.uri !== uri));
     };
 
     /* ---------------- Upload ---------------- */
 
-    const handleUpload = async () => {
-        if (!image || loading) return;
-
-        if (!isStory && !title.trim()) {
-            Alert.alert("Missing title", "Please add a title.");
+    const handleCreate = async () => {
+        if (!title.trim() || !description.trim()) {
+            Alert.alert("Missing Fields", "Please add a title and description.");
             return;
         }
 
-        if (!isStory && !caption.trim()) {
-            Alert.alert("Missing caption", "Please add a caption.");
+        if (selectedImages.length === 0 && selectedVideos.length === 0) {
+            Alert.alert("No Media", "Please add at least one photo or video.");
             return;
         }
 
@@ -87,174 +102,201 @@ const UploadMemoryScreen = ({ navigation, route }) => {
 
         try {
             const formData = new FormData();
+            formData.append("title", title.trim());
+            formData.append("description", description.trim());
+            formData.append("year", year);
+            formData.append("tags", tags);
+            if (location) formData.append("location", location);
+            // User requested UI. We implement UI.
 
-            if (!isStory) {
-                formData.append("title", title.trim());
-            }
-
-            formData.append("description", caption.trim());
-
-            if (location.trim()) {
-                formData.append("location", location.trim());
-            }
-
-            if (isStory) {
-                formData.append("image", {
-                    uri: image.uri,
-                    name: "story.jpg",
-                    type: "image/jpeg",
-                });
-                await createStory(formData);
-            } else {
+            // Append Images
+            selectedImages.forEach((img, index) => {
                 formData.append("images", {
-                    uri: image.uri,
-                    name: "memory.jpg",
+                    uri: img.uri,
+                    name: `image_${index}.jpg`,
                     type: "image/jpeg",
                 });
-                await createMemory(formData);
-            }
+            });
+
+            // Append Videos
+            selectedVideos.forEach((vid, index) => {
+                formData.append("videos", {
+                    uri: vid.uri,
+                    name: `video_${index}.mp4`,
+                    type: "video/mp4", // Improve mime type detection if needed
+                });
+            });
+
+            await createMemory(formData);
 
             navigation.goBack();
-            Alert.alert(isStory ? "Story shared ✨" : "Memory created 🎉");
-        } catch (e) {
-            console.log("Upload error:", e);
-            Alert.alert("Upload failed", "Please try again.");
+            Alert.alert("Success", "Memory created successfully! 🎉");
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "Failed to create memory. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
-    /* ---------------- Render ---------------- */
-
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    disabled={loading}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="close" size={28} color="#222" />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
-
-                <Text style={styles.headerTitle}>
-                    {isStory ? "Add to Story" : "New Memory"}
-                </Text>
-
-                <TouchableOpacity
-                    disabled={loading || !image}
-                    onPress={handleUpload}
-                >
-                    {loading ? (
-                        <ActivityIndicator size="small" color="#34C759" />
-                    ) : (
-                        <MotiText
-                            from={{ opacity: 0.6 }}
-                            animate={{ opacity: image ? 1 : 0.4 }}
-                            style={styles.postText}
-                        >
-                            {isStory ? "Share" : "Post"}
-                        </MotiText>
-                    )}
-                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Create Memory</Text>
+                <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.content}>
-                    {/* Image Picker */}
-                    <TouchableOpacity
-                        onPress={pickImage}
-                        activeOpacity={0.85}
-                        disabled={loading}
-                    >
-                        <MotiView
-                            from={{ opacity: 0, scale: 0.96 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 300 }}
-                            style={[
-                                styles.imageBox,
-                                isStory && { height: 420, aspectRatio: 9 / 16 },
-                            ]}
-                        >
-                            {image ? (
-                                <>
-                                    <Image
-                                        source={{ uri: image.uri }}
-                                        style={styles.imagePreview}
-                                    />
-                                    <TouchableOpacity
-                                        disabled={loading}
-                                        style={styles.removeImageBtn}
-                                        onPress={() => setImage(null)}
-                                    >
-                                        <Ionicons
-                                            name="close"
-                                            size={18}
-                                            color="#fff"
-                                        />
-                                    </TouchableOpacity>
-                                </>
-                            ) : (
-                                <View style={styles.placeholderCenter}>
-                                    <Ionicons
-                                        name="image-outline"
-                                        size={42}
-                                        color="#aaa"
-                                    />
-                                    <Text style={styles.placeholderText}>
-                                        Tap to select photo
-                                    </Text>
-                                </View>
-                            )}
-                        </MotiView>
-                    </TouchableOpacity>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Media Section */}
+                <View style={styles.card}>
+                    <View style={styles.cardHeader}>
+                        <Ionicons name="share-outline" size={20} color="#333" />
+                        <Text style={styles.cardTitle}>Media</Text>
+                    </View>
 
-                    {/* Title (for memories only) */}
-                    {!isStory && (
-                        <TextInput
-                            value={title}
-                            onChangeText={setTitle}
-                            placeholder="Memory title..."
-                            placeholderTextColor="#999"
-                            editable={!loading}
-                            style={styles.titleInput}
-                        />
-                    )}
+                    {/* Buttons */}
+                    <View style={styles.mediaButtons}>
+                        <TouchableOpacity style={styles.mediaBtn} onPress={pickImages}>
+                            <View style={[styles.iconCircle, { backgroundColor: '#E3F2FD' }]}>
+                                <Ionicons name="image-outline" size={24} color="#1565C0" />
+                            </View>
+                            <View>
+                                <Text style={styles.mediaBtnTitle}>Add Photos</Text>
+                                <Text style={styles.mediaBtnSub}>JPG, PNG</Text>
+                            </View>
+                        </TouchableOpacity>
 
-                    {/* Description */}
-                    <TextInput
-                        value={caption}
-                        onChangeText={setCaption}
-                        placeholder={
-                            isStory
-                                ? "Add a caption…"
-                                : "Write a caption..."
-                        }
-                        placeholderTextColor="#999"
-                        editable={!loading}
-                        multiline
-                        style={styles.descInput}
-                    />
+                        <View style={styles.mediaSpacer} />
 
-                    {/* Location */}
-                    {!isStory && (
-                        <View style={styles.locationRow}>
-                            <Ionicons
-                                name="location-outline"
-                                size={20}
-                                color="#666"
-                            />
-                            <TextInput
-                                value={location}
-                                onChangeText={setLocation}
-                                placeholder="Add location"
-                                placeholderTextColor="#999"
-                                editable={!loading}
-                                style={styles.locationInput}
-                            />
+                        <TouchableOpacity style={styles.mediaBtn} onPress={pickVideos}>
+                            <View style={[styles.iconCircle, { backgroundColor: '#E8F5E9' }]}>
+                                <Ionicons name="videocam-outline" size={24} color="#2E7D32" />
+                            </View>
+                            <View>
+                                <Text style={styles.mediaBtnTitle}>Add Videos</Text>
+                                <Text style={styles.mediaBtnSub}>MP4, MOV</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Previews */}
+                    {(selectedImages.length > 0 || selectedVideos.length > 0) && (
+                        <View style={styles.previewGrid}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                {selectedImages.map((img, i) => (
+                                    <View key={`img-${i}`} style={styles.previewItem}>
+                                        <Image source={{ uri: img.uri }} style={styles.previewImage} />
+                                        <TouchableOpacity
+                                            style={styles.removeBtn}
+                                            onPress={() => removeImage(img.uri)}
+                                        >
+                                            <Ionicons name="close" size={12} color="#fff" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                                {selectedVideos.map((vid, i) => (
+                                    <View key={`vid-${i}`} style={styles.previewItem}>
+                                        <View style={[styles.previewImage, styles.videoPlaceholder]}>
+                                            <Ionicons name="play" size={24} color="#fff" />
+                                        </View>
+                                        <TouchableOpacity
+                                            style={styles.removeBtn}
+                                            onPress={() => removeVideo(vid.uri)}
+                                        >
+                                            <Ionicons name="close" size={12} color="#fff" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </ScrollView>
                         </View>
                     )}
                 </View>
+
+                {/* Details Section */}
+                <View style={styles.card}>
+                    {/* Title */}
+                    <Text style={styles.label}>Title</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Give your memory a name..."
+                        placeholderTextColor="#999"
+                        value={title}
+                        onChangeText={setTitle}
+                    />
+
+                    {/* Description */}
+                    <Text style={styles.label}>Description</Text>
+                    <TextInput
+                        style={[styles.input, styles.textArea]}
+                        placeholder="Tell the story behind this moment..."
+                        placeholderTextColor="#999"
+                        value={description}
+                        onChangeText={setDescription}
+                        multiline
+                    />
+
+                    {/* Year */}
+                    <Text style={styles.label}>
+                        <Ionicons name="calendar-outline" size={16} color="#333" /> Year
+                    </Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="2025"
+                        placeholderTextColor="#999"
+                        keyboardType="numeric"
+                        value={year}
+                        onChangeText={setYear}
+                    />
+
+                    {/* Location */}
+                    <LocationSelect
+                        label={
+                            <Text style={styles.label}>
+                                <Ionicons name="location-outline" size={16} color="#333" /> Location
+                            </Text>
+                        }
+                        value={location}
+                        onChange={setLocation}
+                        placeholder="Search for a location..."
+                    />
+
+                    {/* Tags */}
+                    <Text style={styles.label}>
+                        <Ionicons name="pricetag-outline" size={16} color="#333" /> Tags
+                    </Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Add tags..."
+                        placeholderTextColor="#999"
+                        value={tags}
+                        onChangeText={setTags}
+                    />
+                </View>
+
+                {/* Footer Button */}
+                <TouchableOpacity
+                    style={styles.createBtn}
+                    onPress={handleCreate}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <>
+                            <Ionicons name="sparkles-outline" size={20} color="#FFD700" style={{ marginRight: 8 }} />
+                            <Text style={styles.createBtnText}>Create Memory</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+
+                <View style={{ height: 40 }} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -262,106 +304,173 @@ const UploadMemoryScreen = ({ navigation, route }) => {
 
 export default UploadMemoryScreen;
 
-/* ---------------- Styles ---------------- */
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: "#F5F7FA",
     },
-
     header: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderColor: "#eee",
         alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
     },
-
+    backBtn: {
+        padding: 8,
+    },
     headerTitle: {
         fontSize: 18,
         fontWeight: "700",
         color: "#333",
     },
-
-    postText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#34C759",
+    scrollContent: {
+        padding: 16,
     },
-
-    content: {
-        padding: 20,
-    },
-
-    imageBox: {
-        width: "100%",
-        height: 260,
-        backgroundColor: "#f2f2f2",
-        borderRadius: 18,
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: "#ddd",
-        overflow: "hidden",
-        marginBottom: 18,
-    },
-
-    placeholderCenter: {
-        alignItems: "center",
-    },
-
-    placeholderText: {
-        marginTop: 8,
-        color: "#888",
-        fontSize: 14,
-    },
-
-    imagePreview: {
-        width: "100%",
-        height: "100%",
-        resizeMode: "cover",
-    },
-
-    removeImageBtn: {
-        position: "absolute",
-        top: 12,
-        right: 12,
-        backgroundColor: "rgba(0,0,0,0.55)",
-        padding: 6,
+    card: {
+        backgroundColor: '#fff',
         borderRadius: 20,
+        padding: 16,
+        marginBottom: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
-
-    titleInput: {
-        fontSize: 22,
-        fontWeight: "700",
-        color: "#333",
-        marginBottom: 14,
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 8,
     },
-
-    descInput: {
-        minHeight: 90,
-        maxHeight: 160,
-        textAlignVertical: "top",
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#333',
+    },
+    mediaButtons: {
+        // flexDirection: 'column',
+        gap: 12,
+    },
+    mediaBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#eee',
+        borderStyle: 'dashed',
+    },
+    mediaSpacer: {
+        height: 12,
+    },
+    iconCircle: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    mediaBtnTitle: {
         fontSize: 16,
-        color: "#333",
-        marginBottom: 18,
+        fontWeight: '700',
+        color: '#333',
     },
-
-    locationRow: {
-        flexDirection: "row",
-        alignItems: "center",
+    mediaBtnSub: {
+        fontSize: 13,
+        color: '#888',
+        marginTop: 2,
+    },
+    previewGrid: {
+        marginTop: 16,
+        flexDirection: 'row',
+    },
+    previewItem: {
+        width: 80,
+        height: 80,
+        borderRadius: 12,
+        marginRight: 10,
+        position: 'relative',
+    },
+    previewImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 12,
+        backgroundColor: '#f0f0f0',
+    },
+    videoPlaceholder: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#333',
+    },
+    removeBtn: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: 'red',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 8,
+        marginTop: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    input: {
+        backgroundColor: '#F7F9FC',
+        borderRadius: 12,
+        paddingHorizontal: 16,
         paddingVertical: 14,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: "#eee",
+        fontSize: 15,
+        color: '#333',
+        borderWidth: 1,
+        borderColor: '#EEE',
     },
-
-    locationInput: {
-        fontSize: 16,
-        marginLeft: 10,
-        color: "#333",
-        flex: 1,
+    inputWithIcon: {
+        backgroundColor: '#F7F9FC',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#EEE',
+    },
+    textArea: {
+        minHeight: 120,
+        textAlignVertical: 'top',
+    },
+    createBtn: {
+        backgroundColor: '#111827', // Dark navy/black like mockup
+        borderRadius: 16,
+        paddingVertical: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: "#111827",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    createBtnText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '700',
     },
 });

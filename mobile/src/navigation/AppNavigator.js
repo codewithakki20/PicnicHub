@@ -17,6 +17,8 @@ import UploadStoryScreen from '../screens/UserScreen/UploadStory';
 import UploadReelScreen from '../screens/UserScreen/UploadReelScreen';
 import MemoryDetailsScreen from '../screens/MemoriesScreen/MemoryDetailsScreen';
 import ReelViewerScreen from '../screens/ReelsScreen/ReelViewerScreen';
+import EditMemoryScreen from '../screens/MemoriesScreen/EditMemoryScreen';
+import EditReelScreen from '../screens/ReelsScreen/EditReelScreen';
 import CommentsScreen from '../screens/CommentsScreen';
 import OtherUserProfileScreen from '../screens/UserScreen/OtherUserProfileScreen';
 import FollowListScreen from '../screens/FollowListScreen';
@@ -57,6 +59,17 @@ const AppNavigator = () => {
             <Stack.Screen
                 name="UploadReel"
                 component={UploadReelScreen}
+                options={{ presentation: 'modal' }}
+            />
+
+            <Stack.Screen
+                name="EditMemory"
+                component={EditMemoryScreen}
+                options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+                name="EditReel"
+                component={EditReelScreen}
                 options={{ presentation: 'modal' }}
             />
 

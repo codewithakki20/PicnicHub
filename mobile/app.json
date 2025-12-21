@@ -63,7 +63,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://picnichub.onrender.com/api/v1",
+      "apiUrl": "http://10.26.247.120:5000/api/v1",
       "eas": {
         "projectId": "1682392b-e3ab-46bc-9b2d-195197cbc93c"
       }
