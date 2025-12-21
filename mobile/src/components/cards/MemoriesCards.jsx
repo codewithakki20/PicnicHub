@@ -126,7 +126,7 @@ const MemoriesCards = ({
                     {/* ACTIONS */}
                     <View style={styles.actions}>
                         <TouchableOpacity
-                            onPress={onLike}
+                            onPress={() => onLike(item._id)}
                             style={[
                                 styles.actionBtn,
                                 isLiked && styles.likedBtn,
@@ -149,7 +149,7 @@ const MemoriesCards = ({
 
                         <TouchableOpacity
                             style={styles.actionBtn}
-                            onPress={onComment}
+                            onPress={() => onComment(item)}
                         >
                             <Ionicons
                                 name="chatbubble-outline"
@@ -163,7 +163,7 @@ const MemoriesCards = ({
 
                         <TouchableOpacity
                             style={styles.actionBtn}
-                            onPress={onShare}
+                            onPress={() => onShare(item)}
                         >
                             <Ionicons
                                 name="share-social-outline"
@@ -221,7 +221,7 @@ const MemoriesCards = ({
     );
 };
 
-export default MemoriesCards;
+export default React.memo(MemoriesCards);
 
 /* ---------------- Styles ---------------- */
 

@@ -38,7 +38,7 @@ const ReelsScreen = ({ navigation }) => {
         }, [])
     );
 
-    const fetchReels = async () => {
+    const fetchReels = useCallback(async () => {
         try {
             const res = await getReels();
             setReels(res?.reels || []);
@@ -48,15 +48,15 @@ const ReelsScreen = ({ navigation }) => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchReels();
-    }, []);
+    }, [fetchReels]);
 
     /* ❤️ Optimistic like */
-    const handleLike = async (id) => {
+    const handleLike = useCallback(async (id) => {
         setReels(prev =>
             prev.map(r =>
                 r._id === id
@@ -79,10 +79,10 @@ const ReelsScreen = ({ navigation }) => {
         } catch (e) {
             console.log("Like error", e);
         }
-    };
+    }, []);
 
     /* ➕ Optimistic Follow */
-    const handleFollow = async (userId) => {
+    const handleFollow = useCallback(async (userId) => {
         // Optimize: update ALL reels from this user
         setReels(prev =>
             prev.map(r => {
@@ -109,7 +109,7 @@ const ReelsScreen = ({ navigation }) => {
             console.log("Follow error", error);
             // Revert on error could be implemented here by re-toggling
         }
-    };
+    }, []);
 
     /* 🎯 Viewability-based autoplay */
     const viewabilityConfig = useRef({
@@ -123,7 +123,7 @@ const ReelsScreen = ({ navigation }) => {
     }).current;
 
     /* 📤 Share */
-    const handleShare = async (item) => {
+    const handleShare = useCallback(async (item) => {
         try {
             const user = item.uploaderId?.username || item.user?.username || 'PicnicHub';
             await Share.share({
@@ -133,10 +133,10 @@ const ReelsScreen = ({ navigation }) => {
         } catch (e) {
             console.log("Share error", e);
         }
-    };
+    }, []);
 
     /* 🗑️ Delete */
-    const handleDelete = (item) => {
+    const handleDelete = useCallback((item) => {
         Alert.alert(
             "Delete Reel",
             "Are you sure you want to delete this reel?",
@@ -157,9 +157,23 @@ const ReelsScreen = ({ navigation }) => {
                 }
             ]
         );
-    };
+    }, [fetchReels]);
 
-    const renderItem = ({ item, index }) => (
+    const handleComment = useCallback((item) => {
+        navigation.navigate("Comments", { data: item, type: 'reel' });
+    }, [navigation]);
+
+    const handleProfilePress = useCallback((item) => {
+        const userId = item.user?._id || item.uploaderId?._id;
+        if (userId)
+            navigation.navigate("UserProfile", { userId });
+    }, [navigation]);
+
+    const handleEdit = useCallback((item) => {
+        navigation.navigate("UploadReel", { reel: item, isEdit: true });
+    }, [navigation]);
+
+    const renderItem = useCallback(({ item, index }) => (
         <ReelsCards
             currentUser={user}
             item={item}
@@ -167,20 +181,13 @@ const ReelsScreen = ({ navigation }) => {
             muted={muted}
             onLike={handleLike}
             onFollow={handleFollow}
-            onComment={() =>
-                navigation.navigate("Comments", { data: item, type: 'reel' })
-            }
-            onShare={() => handleShare(item)}
+            onComment={handleComment}
+            onShare={handleShare}
             onDelete={handleDelete}
-            onProfilePress={() => {
-                const userId =
-                    item.user?._id || item.uploaderId?._id;
-                if (userId)
-                    navigation.navigate("UserProfile", { userId });
-            }}
-            onEdit={(item) => navigation.navigate("UploadReel", { reel: item, isEdit: true })}
+            onProfilePress={handleProfilePress}
+            onEdit={handleEdit}
         />
-    );
+    ), [user, activeIndex, muted, handleLike, handleFollow, handleComment, handleShare, handleDelete, handleProfilePress, handleEdit]);
 
     if (loading) {
         return (

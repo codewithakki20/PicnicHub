@@ -10,7 +10,7 @@ import Constants from 'expo-constants';
 export const BASE_URL =
     Constants.expoConfig?.extra?.apiUrl ||
     Constants.manifest?.extra?.apiUrl ||
-    'http://10.26.247.120:5000/api/v1';
+    'https://picnichub.onrender.com/api/v1';
 
 const isDev = __DEV__;
 

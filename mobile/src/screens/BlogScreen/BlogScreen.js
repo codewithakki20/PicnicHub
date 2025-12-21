@@ -58,7 +58,7 @@ const BlogScreen = ({ navigation }) => {
         fetchBlogs();
     }, []);
 
-    const fetchBlogs = async () => {
+    const fetchBlogs = useCallback(async () => {
         try {
             const res = await getBlogs();
             setBlogs(res?.blogs || []);
@@ -68,12 +68,12 @@ const BlogScreen = ({ navigation }) => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchBlogs();
-    }, []);
+    }, [fetchBlogs]);
 
     /* 🧠 Derived categories */
     const categories = useMemo(() => {
@@ -103,15 +103,17 @@ const BlogScreen = ({ navigation }) => {
         return data;
     }, [blogs, search, activeCategory]);
 
-    const renderItem = ({ item, index }) => (
+    const handlePress = useCallback((item) => {
+        navigation.navigate('BlogDetails', { blog: item });
+    }, [navigation]);
+
+    const renderItem = useCallback(({ item, index }) => (
         <BlogCards
             item={item}
             index={index}
-            onPress={() =>
-                navigation.navigate('BlogDetails', { blog: item })
-            }
+            onPress={handlePress}
         />
-    );
+    ), [handlePress]);
 
     if (loading) {
         return (

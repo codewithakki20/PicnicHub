@@ -6,7 +6,7 @@
 - **EAS CLI**: Installed (v16.28.0) ✅
 - **Logged in**: ankit020 ✅
 - **Project ID**: `1682392b-e3ab-46bc-9b2d-195197cbc93c` ✅
-- **App Version**: 1.0.0
+- **App Version**: 1.0.1 (Performance Update)
 
 ---
 
@@ -16,7 +16,7 @@
 
 **Command**: `eas build --platform android --profile preview`
 
-**Status**: Building...
+**Status**: Ready for Build ✅
 
 **What you'll get**:
 - Direct APK download link
@@ -279,8 +279,9 @@ eas build:view --id [build-id]
 
 ---
 
-**Current Status**: Preview build in progress! ⏳  
-**Expected Completion**: ~5-8 minutes  
+**Current Status**: Version 1.0.1 Ready for Deployment! 🚀
+**Updates**: Performance optimization for huge lists (Reels, Memories)
+**Next Step**: Run build command below  
 **You'll receive**: Download link via email and Expo dashboard
 
 Check build status: `eas build:list`

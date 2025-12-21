@@ -44,7 +44,7 @@ const BlogCards = ({ item, index = 0, onPress }) => {
             <TouchableOpacity
                 style={styles.card}
                 activeOpacity={0.95}
-                onPress={onPress}
+                onPress={() => onPress(item)}
             >
                 {/* COVER */}
                 <View>
@@ -96,7 +96,7 @@ const BlogCards = ({ item, index = 0, onPress }) => {
     );
 };
 
-export default BlogCards;
+export default React.memo(BlogCards);
 
 /* ---------------- Styles ---------------- */
 

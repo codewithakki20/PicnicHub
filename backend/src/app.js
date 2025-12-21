@@ -88,6 +88,23 @@ app.get("/health", (req, res) => {
 });
 
 
+// API ROOT HANDLER
+app.get("/api/v1", (req, res) => {
+  res.json({
+    message: "Welcome to PicnicHub API v1 🌿",
+    status: "active",
+    endpoints: {
+      health: "/health",
+      auth: "/api/v1/auth",
+      users: "/api/v1/users",
+      memories: "/api/v1/memories",
+      reels: "/api/v1/reels",
+      blogs: "/api/v1/blogs",
+    }
+  });
+});
+
+
 // API 404 HANDLER
 app.use("/api/*", (req, res) => {
   res.status(404).json({

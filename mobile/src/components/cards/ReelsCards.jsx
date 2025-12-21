@@ -163,7 +163,7 @@ const ReelsCards = ({
                 <View style={styles.actionItem}>
                     <TouchableOpacity
                         style={styles.actionButton}
-                        onPress={onComment}
+                        onPress={() => onComment(item)}
                     >
                         <Ionicons
                             name="chatbubble-outline"
@@ -180,7 +180,7 @@ const ReelsCards = ({
                 <View style={styles.actionItem}>
                     <TouchableOpacity
                         style={styles.actionButton}
-                        onPress={onShare}
+                        onPress={() => onShare(item)}
                     >
                         <Ionicons
                             name="paper-plane-outline"
@@ -197,7 +197,7 @@ const ReelsCards = ({
                 <View style={styles.userRow}>
                     <TouchableOpacity
                         style={styles.userInfo}
-                        onPress={onProfilePress}
+                        onPress={() => onProfilePress(item)}
                     >
                         <Image source={{ uri: avatar }} style={styles.avatar} />
                         <Text style={styles.username}>@{username}</Text>
@@ -276,7 +276,7 @@ const ReelsCards = ({
     );
 };
 
-export default ReelsCards;
+export default React.memo(ReelsCards);
 
 /* ---------------- Styles ---------------- */
 

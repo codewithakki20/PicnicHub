@@ -60,7 +60,7 @@ const MemoriesScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const fetchMemories = async () => {
+    const fetchMemories = useCallback(async () => {
         try {
             const res = await getMemories();
             const sorted = (res.memories || []).sort(
@@ -73,7 +73,7 @@ const MemoriesScreen = ({ navigation }) => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchMemories();
@@ -82,9 +82,9 @@ const MemoriesScreen = ({ navigation }) => {
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchMemories();
-    }, []);
+    }, [fetchMemories]);
 
-    const handleShare = async (item) => {
+    const handleShare = useCallback(async (item) => {
         try {
             const title = item.title || 'A PicnicHub Memory';
             const user = item.user?.username || 'PicnicHub';
@@ -95,9 +95,9 @@ const MemoriesScreen = ({ navigation }) => {
         } catch (error) {
             console.log('Share error:', error.message);
         }
-    };
+    }, []);
 
-    const toggleLike = async (id) => {
+    const toggleLike = useCallback(async (id) => {
         // Optimistic Update
         setMemories(prev =>
             prev.map(m => {
@@ -131,7 +131,7 @@ const MemoriesScreen = ({ navigation }) => {
                 })
             );
         }
-    };
+    }, []);
 
     const handleCommentUpdate = (id) => {
         setMemories(prev =>
@@ -146,7 +146,7 @@ const MemoriesScreen = ({ navigation }) => {
         );
     };
 
-    const handleDelete = (item) => {
+    const handleDelete = useCallback((item) => {
         Alert.alert(
             "Delete Memory",
             "Are you sure you want to delete this memory?",
@@ -167,9 +167,21 @@ const MemoriesScreen = ({ navigation }) => {
                 }
             ]
         );
-    };
+    }, [fetchMemories]);
 
-    const renderItem = ({ item, index }) => (
+    const handleComment = useCallback((item) => {
+        navigation.navigate('Comments', {
+            memory: item,
+            type: 'memory',
+            autoFocus: true,
+        });
+    }, [navigation]);
+
+    const handleEdit = useCallback((item) => {
+        navigation.navigate('EditMemory', { memory: item });
+    }, [navigation]);
+
+    const renderItem = useCallback(({ item, index }) => (
         <MotiView
             from={{ opacity: 0, translateY: 12 }}
             animate={{ opacity: 1, translateY: 0 }}
@@ -180,21 +192,14 @@ const MemoriesScreen = ({ navigation }) => {
                 index={index}
                 isLiked={item.isLiked}
                 isOwner={item.uploaderId?._id === currentUser?._id || item.user?._id === currentUser?._id}
-                onLike={() => toggleLike(item._id)}
-                onComment={() =>
-                    navigation.navigate('Comments', {
-                        memory: item,
-                        type: 'memory',
-                        autoFocus: true,
-                        autoFocus: true,
-                    })
-                }
-                onShare={() => handleShare(item)}
+                onLike={toggleLike}
+                onComment={handleComment}
+                onShare={handleShare}
                 onDelete={handleDelete}
-                onEdit={(item) => navigation.navigate('EditMemory', { memory: item })}
+                onEdit={handleEdit}
             />
         </MotiView>
-    );
+    ), [currentUser, toggleLike, handleComment, handleShare, handleDelete, handleEdit]);
 
     if (loading) {
         return (

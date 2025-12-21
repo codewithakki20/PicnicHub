@@ -53,9 +53,7 @@ export const register = async (req, res) => {
       </div>
     `;
 
-    sendEmail({ to: user.email, subject: 'Verify your account', text: message, html }).catch(err => {
-      console.error("Failed to send OTP email:", err);
-    });
+    await sendEmail({ to: user.email, subject: 'Verify your account', text: message, html });
 
     res.status(201).json({
       message: 'Registration successful. Please check your email for OTP to verify your account.',
@@ -174,9 +172,7 @@ export const forgotPassword = async (req, res) => {
       <p>If you didn't request this, please ignore this email.</p>
     `;
 
-    sendEmail({ to: user.email, subject, text, html }).catch(err => {
-      console.error('Failed to send password reset OTP email:', err);
-    });
+    await sendEmail({ to: user.email, subject, text, html });
 
     res.json({ message: 'Password reset OTP sent to email' });
   } catch (error) {
@@ -278,9 +274,7 @@ export const sendOtp = async (req, res) => {
     const text = `Your OTP code is ${otp}. It expires in 10 minutes.`;
     const html = `<p>Your OTP code is <strong>${otp}</strong>. It expires in 10 minutes.</p>`;
 
-    sendEmail({ to: email, subject, text, html }).catch(err => {
-      console.error("Failed to send OTP email (Resend):", err);
-    });
+    await sendEmail({ to: email, subject, text, html });
 
     res.json({ message: 'OTP sent to email' });
   } catch (error) {
