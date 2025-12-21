@@ -137,7 +137,7 @@ const UploadReelScreen = ({ navigation }) => {
             formData.append("caption", caption.trim());
 
             if (location) {
-                formData.append("location", location);
+                formData.append("locationId", location);
             }
 
             formData.append("video", {

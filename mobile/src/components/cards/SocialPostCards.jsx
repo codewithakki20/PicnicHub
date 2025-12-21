@@ -77,6 +77,7 @@ const SocialReelPlayer = ({ item, isActive, onLike }) => {
 
 const SocialPostCards = ({
     item,
+    currentUser,
     type,
     isActive,
     onPress,
@@ -91,8 +92,9 @@ const SocialPostCards = ({
     const [menuVisible, setMenuVisible] = useState(false);
 
     /* ---------- USER NORMALIZATION ---------- */
-    const rawUser = item.user || item.uploaderId || item.authorId;
+    const rawUser = item.user || item.uploaderId || item.author || item.authorId;
     const user = typeof rawUser === 'object' && rawUser !== null ? rawUser : {};
+    const userId = user._id || (typeof rawUser === 'string' ? rawUser : null);
 
     const avatar = getAvatarUrl(
         user.avatarUrl ||
@@ -146,13 +148,16 @@ const SocialPostCards = ({
                         <View>
                             <Text style={styles.username}>@{username}</Text>
 
-                            {!!item.location && (
+                            {(!!item.locationId || !!item.locationSnapshot || !!item.location) && (
                                 <View style={styles.locationRow}>
                                     <Ionicons name="location-sharp" size={10} color="#777" />
                                     <Text style={styles.locationText}>
-                                        {typeof item.location === 'string'
-                                            ? item.location
-                                            : item.location?.address || item.location?.name}
+                                        {(item.locationId?.name || item.locationId?.address) ||
+                                            (item.locationSnapshot?.name) ||
+                                            (typeof item.location === 'string' ? item.location : null) ||
+                                            (typeof item.locationId === 'string' ? item.locationId : null) ||
+                                            (item.location?.name) ||
+                                            "Unknown"}
                                     </Text>
                                 </View>
                             )}
@@ -162,33 +167,12 @@ const SocialPostCards = ({
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={styles.dateText}>{day} {month}</Text>
 
-                        {onFollow && (
-                            <TouchableOpacity
-                                style={[
-                                    styles.miniFollowBtn,
-                                    user.isFollowing && styles.miniFollowingBtn,
-                                ]}
-                                onPress={onFollow}
-                            >
-                                <Text
-                                    style={[
-                                        styles.miniFollowText,
-                                        user.isFollowing && styles.miniFollowingText,
-                                    ]}
-                                >
-                                    {user.isFollowing ? 'Following' : 'Follow'}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-
-                        {(onEdit || onDelete) && (
-                            <TouchableOpacity
-                                style={{ marginLeft: 10, padding: 4 }}
-                                onPress={() => setMenuVisible(true)}
-                            >
-                                <Ionicons name="ellipsis-vertical" size={16} color="#555" />
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            style={{ marginLeft: 10, padding: 4 }}
+                            onPress={() => setMenuVisible(true)}
+                        >
+                            <Ionicons name="ellipsis-vertical" size={16} color="#555" />
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -202,35 +186,60 @@ const SocialPostCards = ({
                     <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
                         <View style={styles.modalOverlay}>
                             <View style={styles.menuContainer}>
-                                {onEdit && (
-                                    <TouchableOpacity
-                                        style={styles.menuItem}
-                                        onPress={() => {
-                                            setMenuVisible(false);
-                                            onEdit(item);
-                                        }}
-                                    >
-                                        <Ionicons name="create-outline" size={20} />
-                                        <Text style={styles.menuText}>Edit</Text>
-                                    </TouchableOpacity>
-                                )}
-
-                                {onDelete && (
+                                {/* Edit & Delete (Owner Only) */}
+                                {(currentUser && currentUser._id === userId) ? (
                                     <>
-                                        <View style={styles.menuDivider} />
+                                        {onEdit && (
+                                            <TouchableOpacity
+                                                style={styles.menuItem}
+                                                onPress={() => {
+                                                    setMenuVisible(false);
+                                                    onEdit(item);
+                                                }}
+                                            >
+                                                <Ionicons name="create-outline" size={20} color="#333" />
+                                                <Text style={styles.menuText}>Edit Post</Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        {onDelete && (
+                                            <>
+                                                <View style={styles.menuDivider} />
+                                                <TouchableOpacity
+                                                    style={styles.menuItem}
+                                                    onPress={() => {
+                                                        setMenuVisible(false);
+                                                        onDelete(item);
+                                                    }}
+                                                >
+                                                    <Ionicons name="trash-outline" size={20} color="#d32f2f" />
+                                                    <Text style={[styles.menuText, { color: '#d32f2f' }]}>
+                                                        Delete Post
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </>
+                                        )}
+                                    </>
+                                ) : (
+                                    /* Follow/Unfollow (Others Only) */
+                                    onFollow && (
                                         <TouchableOpacity
                                             style={styles.menuItem}
                                             onPress={() => {
                                                 setMenuVisible(false);
-                                                onDelete(item);
+                                                if (userId) onFollow(userId);
                                             }}
                                         >
-                                            <Ionicons name="trash-outline" size={20} color="#d32f2f" />
-                                            <Text style={[styles.menuText, { color: '#d32f2f' }]}>
-                                                Delete
+                                            <Ionicons
+                                                name={user.isFollowing ? "person-remove-outline" : "person-add-outline"}
+                                                size={20}
+                                                color={user.isFollowing ? "#d32f2f" : "#333"}
+                                            />
+                                            <Text style={[styles.menuText, user.isFollowing && { color: '#d32f2f' }]}>
+                                                {user.isFollowing ? 'Unfollow' : 'Follow'}
                                             </Text>
                                         </TouchableOpacity>
-                                    </>
+                                    )
                                 )}
                             </View>
                         </View>

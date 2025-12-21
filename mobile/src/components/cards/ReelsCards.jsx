@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from 'expo-linear-gradient';
+// import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get("window");
 
@@ -38,6 +38,7 @@ const ReelsCards = ({
     // Backend populates uploaderId, but legacy might use user
     const rawUser = item.uploaderId || item.user;
     const user = typeof rawUser === "object" && rawUser !== null ? rawUser : {};
+    const userId = user._id || (typeof rawUser === 'string' ? rawUser : null);
 
     const avatar =
         user.avatarUrl ||
@@ -103,27 +104,26 @@ const ReelsCards = ({
                 </View>
             )}
 
-            {/* 🌑 Gradients */}
-            <LinearGradient
-                colors={['rgba(0,0,0,0.4)', 'transparent']}
-                style={styles.gradientTop}
+            {/* 🌑 Gradients (Simulated with views for now to debug class error) */}
+            <View
+                style={[styles.gradientTop, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
             />
-            <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.8)']}
-                style={styles.gradientBottom}
+            <View
+                style={[styles.gradientBottom, { backgroundColor: 'transparent' }]}
             />
 
             {/* 📍 LOCATION & MENU */}
-            {(item.location || onEdit || onDelete) && (
+            {(item.locationId || onEdit || onDelete) && (
                 <View style={[styles.topRightInfo, { flexDirection: 'column', alignItems: 'flex-end', gap: 10 }]}>
                     {/* Location Badge */}
-                    {!!item.location && (
+                    {(!!item.locationId || !!item.locationSnapshot) && (
                         <View style={styles.locationBadge}>
                             <Ionicons name="location-sharp" size={12} color="#fff" />
                             <Text style={styles.locationText}>
-                                {typeof item.location === 'string'
-                                    ? item.location
-                                    : (item.location.name || item.location.address)}
+                                {(item.locationId?.name || item.locationId?.address) ||
+                                    (item.locationSnapshot?.name) ||
+                                    (typeof item.locationId === 'string' ? item.locationId : '') ||
+                                    'Unknown Location'}
                             </Text>
                         </View>
                     )}
@@ -211,7 +211,7 @@ const ReelsCards = ({
                                 styles.followBtn,
                                 user.isFollowing && styles.followingBtn,
                             ]}
-                            onPress={() => onFollow(user._id)}
+                            onPress={() => userId && onFollow(userId)}
                         >
                             <Text
                                 style={[

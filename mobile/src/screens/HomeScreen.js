@@ -325,6 +325,7 @@ const HomeScreen = ({ navigation }) => {
                     renderItem={({ item }) => (
                         <SocialPost
                             item={item.data}
+                            currentUser={user}
                             type={item.type}
                             isActive={
                                 item.type === "reel" &&

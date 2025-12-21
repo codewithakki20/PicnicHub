@@ -103,9 +103,15 @@ const LocationSelect = ({ label, value, onChange, placeholder = "Search for a lo
     return (
         <View style={styles.container}>
             {label && (
-                <Text style={styles.label}>
-                    {label} {required && <Text style={{ color: "#ef4444" }}>*</Text>}
-                </Text>
+                typeof label === 'string' ? (
+                    <Text style={styles.label}>
+                        {label} {required && <Text style={{ color: "#ef4444" }}>*</Text>}
+                    </Text>
+                ) : (
+                    <View style={{ marginBottom: 8 }}>
+                        {label}
+                    </View>
+                )
             )}
 
             <View style={styles.inputWrapper}>

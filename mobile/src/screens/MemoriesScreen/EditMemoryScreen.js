@@ -26,7 +26,7 @@ const EditMemoryScreen = ({ navigation, route }) => {
     const [caption, setCaption] = useState(memory?.description || "");
     const [year, setYear] = useState(memory?.year ? String(memory.year) : new Date().getFullYear().toString());
     const [tags, setTags] = useState(memory?.tags ? (Array.isArray(memory.tags) ? memory.tags.join(', ') : memory.tags) : "");
-    const [location, setLocation] = useState(memory?.location?._id || memory?.location || "");
+    const [location, setLocation] = useState(memory?.locationId?._id || memory?.locationId || memory?.location?._id || memory?.location || "");
     const [image, setImage] = useState(memory?.imageUrl ? { uri: getAvatarUrl(memory.imageUrl), isExisting: true } : null);
 
     const [loading, setLoading] = useState(false);
@@ -97,7 +97,7 @@ const EditMemoryScreen = ({ navigation, route }) => {
             formData.append("year", year);
             formData.append("tags", tags);
             if (location.trim()) {
-                formData.append("location", location.trim());
+                formData.append("locationId", location.trim());
             }
 
             // Only append image if it's new (not existing)
@@ -241,12 +241,15 @@ const EditMemoryScreen = ({ navigation, route }) => {
                         />
                     </View>
 
-                    {/* Location */}
                     <LocationSelect
-                        label={null}
+                        label={
+                            <Text style={styles.label}>
+                                <Ionicons name="location-outline" size={16} color="#333" /> Location
+                            </Text>
+                        }
                         value={location}
                         onChange={setLocation}
-                        placeholder="Add location"
+                        placeholder="Search for a location..."
                     />
                 </View>
             </ScrollView>

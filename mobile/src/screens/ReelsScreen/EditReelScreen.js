@@ -171,7 +171,11 @@ const EditReelScreen = ({ navigation, route }) => {
                         <Text style={{ color: '#999' }}>Location</Text>
                     </View>
                     <LocationSelect
-                        label={null}
+                        label={
+                            <Text style={styles.label}>
+                                <Ionicons name="location-outline" size={16} color="#333" /> Location
+                            </Text>
+                        }
                         value={location}
                         onChange={setLocation}
                         placeholder="Search for a location..."

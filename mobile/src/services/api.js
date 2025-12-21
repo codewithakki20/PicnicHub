@@ -241,7 +241,7 @@ export const getLocation = (id) =>
     api.get(`/locations/${id}`).then(r => r.data);
 
 export const searchLocations = (query) =>
-    api.get('/locations/search', { params: { query } }).then(r => r.data);
+    api.get('/locations/search', { params: { q: query } }).then(r => r.data);
 
 export const getAvatarUrl = (url) => {
     if (!url) return "https://via.placeholder.com/200";

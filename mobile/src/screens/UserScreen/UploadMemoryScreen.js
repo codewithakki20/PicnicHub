@@ -106,7 +106,7 @@ const UploadMemoryScreen = ({ navigation }) => {
             formData.append("description", description.trim());
             formData.append("year", year);
             formData.append("tags", tags);
-            if (location) formData.append("location", location);
+            if (location) formData.append("locationId", location);
             // User requested UI. We implement UI.
 
             // Append Images

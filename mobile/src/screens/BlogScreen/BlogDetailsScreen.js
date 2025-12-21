@@ -113,6 +113,8 @@ const BlogDetailsScreen = ({ route, navigation }) => {
         return Math.max(1, Math.round(text.length / 1000));
     }, [blog.content, blog.description]);
 
+    const locationName = blog.location?.name || (typeof blog.location === 'string' ? blog.location : null);
+
     const coverImage =
         blog.coverImage ||
         blog.image ||
@@ -191,10 +193,22 @@ const BlogDetailsScreen = ({ route, navigation }) => {
 
                     <Text style={styles.title}>{blog.title}</Text>
 
-                    <Text style={styles.meta}>
-                        {blog.user?.name || blog.author || 'Author'} ·{' '}
-                        {new Date(blog.createdAt).toLocaleDateString()}
-                    </Text>
+                    <View style={styles.metaContainer}>
+                        <Text style={styles.metaAuthor}>
+                            {blog.user?.name || blog.author || 'Author'}
+                        </Text>
+                        <Text style={styles.metaDivider}> • </Text>
+                        <Text style={styles.metaDate}>
+                            {new Date(blog.createdAt).toLocaleDateString()}
+                        </Text>
+                        {locationName && (
+                            <>
+                                <Text style={styles.metaDivider}> • </Text>
+                                <Ionicons name="location-sharp" size={14} color="#D84315" style={{ marginRight: 2 }} />
+                                <Text style={styles.metaLocation}>{locationName}</Text>
+                            </>
+                        )}
+                    </View>
 
                     <RenderHtml
                         contentWidth={contentWidth}
@@ -312,10 +326,30 @@ const styles = StyleSheet.create({
         lineHeight: 38,
     },
 
-    meta: {
+    metaContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 24,
+        flexWrap: 'wrap',
+    },
+    metaAuthor: {
         fontSize: 14,
-        color: '#777',
-        marginBottom: 28,
+        fontWeight: '700',
+        color: '#1B5E20',
+    },
+    metaDate: {
+        fontSize: 14,
+        color: '#757575',
+    },
+    metaLocation: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#D84315',
+    },
+    metaDivider: {
+        fontSize: 14,
+        color: '#BDBDBD',
+        marginHorizontal: 6,
     },
 
     body: {

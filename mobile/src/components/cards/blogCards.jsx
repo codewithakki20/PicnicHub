@@ -6,6 +6,7 @@ import {
     Image,
     TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { MotiView } from 'moti';
 
 const BlogCards = ({ item, index = 0, onPress }) => {
@@ -27,6 +28,8 @@ const BlogCards = ({ item, index = 0, onPress }) => {
         item.user?.name ||
         item.author ||
         'PicnicHub';
+
+    const locationName = item.location?.name || (typeof item.location === 'string' ? item.location : null);
 
     return (
         <MotiView
@@ -78,6 +81,14 @@ const BlogCards = ({ item, index = 0, onPress }) => {
                         <Text style={styles.author}>{author}</Text>
                         <Text style={styles.dot}>•</Text>
                         <Text style={styles.date}>{dateText}</Text>
+
+                        {locationName && (
+                            <>
+                                <Text style={styles.dot}>•</Text>
+                                <Ionicons name="location-outline" size={12} color="#666" style={{ marginRight: 2 }} />
+                                <Text style={styles.date}>{locationName}</Text>
+                            </>
+                        )}
                     </View>
                 </View>
             </TouchableOpacity>

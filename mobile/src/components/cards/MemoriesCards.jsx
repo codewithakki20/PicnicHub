@@ -42,9 +42,10 @@ const MemoriesCards = ({
         'someone';
 
     const location =
-        typeof item.location === 'string'
-            ? item.location
-            : (item.location?.address || item.location?.name || 'Somewhere special ✨');
+        (item.locationId?.name || item.locationId?.address) ||
+        (item.locationSnapshot?.name) ||
+        (typeof item.location === 'string' ? item.location : null) ||
+        (item.location?.name || 'Somewhere special ✨');
 
     return (
         <MotiView

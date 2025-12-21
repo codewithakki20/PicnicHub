@@ -110,11 +110,11 @@ const ReelViewerScreen = ({ route, navigation }) => {
                             <Ionicons name="arrow-back" size={24} color="#fff" />
                         </TouchableOpacity>
 
-                        {data.location && (
+                        {data.locationId && (
                             <View style={styles.locationBadge}>
                                 <Ionicons name="location-sharp" size={12} color="#fff" />
                                 <Text style={styles.locationText}>
-                                    {data.location.name || data.location.address}
+                                    {data.locationId.name || data.locationId.address}
                                 </Text>
                             </View>
                         )}
