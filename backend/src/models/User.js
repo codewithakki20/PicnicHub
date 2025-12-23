@@ -17,9 +17,15 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows null/undefined for non-google users
+    },
+
     passwordHash: {
       type: String,
-      required: true,
+      required: false, // Not required for google users
       select: false,
     },
 
@@ -117,7 +123,9 @@ userSchema.pre("save", async function (next) {
 });
 
 // Compare password
+// Compare password
 userSchema.methods.comparePassword = async function (pw) {
+  if (!this.passwordHash) return false;
   return bcrypt.compare(pw, this.passwordHash);
 };
 

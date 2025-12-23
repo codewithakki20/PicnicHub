@@ -48,7 +48,7 @@ export default function FindPeople() {
             try {
                 setLoading(true);
                 const res = await userApi.getSuggestedUsers();
-                setSuggestedUsers(res.users || []);
+                setSuggestedUsers(Array.isArray(res) ? res : res.users || []);
             } catch (e) {
                 console.error("Failed to load suggestions", e);
             } finally {
@@ -239,8 +239,8 @@ function UserCard({ user, onView, onToggleFollow }) {
                 onClick={handleFollow}
                 disabled={loading}
                 className={`w-full py-3 rounded-xl font-semibold flex justify-center gap-2 transition ${user.isFollowing
-                        ? "bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700"
-                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    ? "bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700"
                     }`}
             >
                 {loading ? (

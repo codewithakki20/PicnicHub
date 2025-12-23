@@ -85,6 +85,9 @@ export const loginUser = (email, password) =>
 export const registerUser = (name, email, password) =>
     api.post('/auth/register', { name, email, password }).then(r => r.data);
 
+export const googleLogin = (data) =>
+    api.post('/auth/google', data).then(r => r.data);
+
 export const verifyOtp = (email, otp) =>
     api.post('/auth/verify-otp', { email, otp }).then(r => r.data);
 
@@ -96,6 +99,9 @@ export const forgotPassword = (email) =>
 
 export const resetPassword = (email, otp, newPassword) =>
     api.post('/auth/reset-password', { email, otp, newPassword }).then(r => r.data);
+
+export const verifyResetOtp = (email, otp) =>
+    api.post('/auth/verify-reset-otp', { email, otp }).then(r => r.data);
 
 /* -----------------------------------------
    MEMORIES

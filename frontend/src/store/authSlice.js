@@ -49,6 +49,19 @@ export const fetchMe = createAsyncThunk(
   }
 );
 
+// GOOGLE LOGIN
+export const googleLogin = createAsyncThunk(
+  "auth/googleLogin",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const res = await authApi.googleLogin(payload);
+      return res;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
 const slice = createSlice({
   name: "auth",
   initialState,
@@ -101,7 +114,15 @@ const slice = createSlice({
     builder
       .addCase(fetchMe.fulfilled, (s, a) => {
         s.user = a.payload;
-        localStorage.setItem("user", JSON.stringify(a.payload));
+      })
+
+      // GOOGLE LOGIN
+      .addCase(googleLogin.fulfilled, (s, a) => {
+        s.status = "succeeded";
+        s.user = a.payload.user;
+        s.token = a.payload.token;
+        tokenStore.setAccess(a.payload.token);
+        localStorage.setItem("user", JSON.stringify(a.payload.user));
       });
   },
 });

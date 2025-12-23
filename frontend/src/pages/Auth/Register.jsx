@@ -11,13 +11,15 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import authApi from "../../api/authApi";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser } from "../../store/authSlice";
 
 /* ================= PAGE ================= */
 
 export default function Register() {
   const navigate = useNavigate();
-  const { status } = useAuth();
+  const dispatch = useDispatch();
+  const { status } = useSelector((s) => s.auth);
 
   const [values, setValues] = useState({
     name: "",
@@ -61,6 +63,8 @@ export default function Register() {
 
   /* ================= SUBMIT ================= */
 
+  /* ================= SUBMIT ================= */
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Submitting registration with values:", values);
@@ -74,12 +78,12 @@ export default function Register() {
 
     try {
       setLoading(true);
-      await authApi.register(values);
+      // Dispatch register action which handles side effects (storage, state)
+      await dispatch(registerUser(values)).unwrap();
 
-      toast.success("Registration successful! Please verify your email.");
-      navigate("/auth/verify-email", {
-        state: { email: values.email },
-      });
+      toast.success("Registration successful! Welcome to PicnicHub.");
+      // Navigate to home (or dashboard) as the user is now authenticated
+      navigate("/");
     } catch (err) {
       setError(
         err?.response?.data?.message ||

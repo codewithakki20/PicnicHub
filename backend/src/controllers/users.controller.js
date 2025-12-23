@@ -223,10 +223,15 @@ export const changePassword = async (req, res) => {
     const user = await User.findById(req.user._id).select('+passwordHash');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // 2. Check current password
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Incorrect current password' });
+    // 2. Check current password (ONLY if user has one)
+    if (user.passwordHash) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required' });
+      }
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Incorrect current password' });
+      }
     }
 
     // 3. Update password (pre-save hook will hash it)
@@ -235,6 +240,7 @@ export const changePassword = async (req, res) => {
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
+    console.error("Change Password Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

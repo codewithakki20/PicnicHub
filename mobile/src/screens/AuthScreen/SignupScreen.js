@@ -41,7 +41,7 @@ const SignupScreen = ({ navigation }) => {
                     try {
                         const email = v.email.trim().toLowerCase();
                         await register(v.name.trim(), email, v.password);
-                        navigation.navigate("OtpVerify", { email });
+                        // No navigation needed; AuthContext update will trigger RootNavigator switch
                     } catch (e) {
                         const msg =
                             e.response?.data?.message ||

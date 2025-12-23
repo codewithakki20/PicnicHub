@@ -1,7 +1,9 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import { CheckCircle, XCircle } from "lucide-react-native";
 import { AuthContext } from "../../context/AuthContext";
+import { verifyResetOtp } from "../../services/api";
 import AuthLayout from "../../components/layout/AuthLayout";
 import AppInput from "../../components/AppInput";
 import PrimaryButton from "../../components/ui/PrimaryButton";
@@ -14,6 +16,20 @@ const schema = Yup.object().shape({
 const ResetPasswordScreen = ({ route, navigation }) => {
     const { email } = route.params;
     const { resetPassword } = useContext(AuthContext);
+    const [otpVerified, setOtpVerified] = useState(null);
+
+    const handleOtpBlur = async (otp) => {
+        if (otp?.length === 6) {
+            try {
+                await verifyResetOtp(email, otp);
+                setOtpVerified(true);
+            } catch (error) {
+                setOtpVerified(false);
+            }
+        } else {
+            setOtpVerified(null);
+        }
+    };
 
     return (
         <AuthLayout
@@ -28,13 +44,31 @@ const ResetPasswordScreen = ({ route, navigation }) => {
                     navigation.navigate("Login");
                 }}
             >
-                {({ handleChange, handleSubmit, values }) => (
+                {({ handleChange, handleSubmit, values, setFieldValue }) => (
                     <>
                         <AppInput
                             label="OTP"
                             value={values.otp}
-                            onChangeText={handleChange("otp")}
+                            onChangeText={(text) => {
+                                handleChange("otp")(text);
+                                setOtpVerified(null);
+                            }}
+                            onBlur={() => handleOtpBlur(values.otp)}
                             keyboardType="number-pad"
+                            wrapperStyle={
+                                otpVerified === true
+                                    ? { borderColor: "#22c55e" }
+                                    : otpVerified === false
+                                        ? { borderColor: "#ef4444" }
+                                        : {}
+                            }
+                            rightIcon={
+                                otpVerified === true ? (
+                                    <CheckCircle size={20} color="#22c55e" />
+                                ) : otpVerified === false ? (
+                                    <XCircle size={20} color="#ef4444" />
+                                ) : null
+                            }
                         />
                         <AppInput
                             label="New Password"

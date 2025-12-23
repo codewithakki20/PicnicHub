@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
+    "@react-oauth/google": "^0.13.4",
     "@reduxjs/toolkit": "^1.9.5",
     "axios": "^1.5.0",
     "dayjs": "^1.11.9",

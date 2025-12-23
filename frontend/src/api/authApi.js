@@ -81,6 +81,23 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
   return res.data;
 };
 
+// VERIFY RESET OTP (Check if OTP is valid before resetting)
+export const verifyResetOtp = async ({ email, otp }) => {
+  const res = await client.post("/auth/verify-reset-otp", { email, otp });
+  return res.data;
+};
+
+// GOOGLE LOGIN
+export const googleLogin = async (data) => {
+  const res = await client.post("/auth/google", data);
+  // data should trigger the same token logic as login
+  if (res.data.token) {
+    tokenStore.setAccess(res.data.token);
+    localStorage.setItem('user', JSON.stringify(res.data.user));
+  }
+  return res.data;
+};
+
 export default {
   register,
   login,
@@ -92,4 +109,6 @@ export default {
   makeAdmin,
   forgotPassword,
   resetPassword,
+  verifyResetOtp,
+  googleLogin,
 };

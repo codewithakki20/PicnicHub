@@ -15,6 +15,8 @@ const AppInput = ({
     password = false,
     style,
     inputStyle,
+    wrapperStyle,
+    rightIcon,
     ...props
 }) => {
     const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +31,7 @@ const AppInput = ({
                 style={[
                     styles.inputWrapper,
                     error && styles.errorBorder,
+                    wrapperStyle,
                 ]}
             >
                 <TextInput
@@ -37,6 +40,12 @@ const AppInput = ({
                     placeholderTextColor={COLORS.muted}
                     {...props}
                 />
+
+                {rightIcon && (
+                    <View style={styles.iconBtn}>
+                        {rightIcon}
+                    </View>
+                )}
 
                 {password && (
                     <TouchableOpacity

@@ -82,10 +82,36 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const googleSignIn = async (data) => {
+        setLoading(l => ({ ...l, login: true }));
+        try {
+            // Import dynamically or assume it's imported at top (it's not, but api.js exports it)
+            // Wait, I need to import googleLogin from api first. 
+            // I will update imports in a separate step or just use the imported one if I updated it.
+            // I updated api.js in previous step, so 'googleLogin' needs to be imported.
+            // But let's assume I will fix imports. 
+            // Actually, I can use the existing imported module if I just imported everything or specific ones.
+            // The file imports specific functions. I need to update imports too.
+            // Let's just add the function here and I'll fix imports next.
+            const { googleLogin } = require("../services/api");
+            const res = await googleLogin(data);
+            await persistAuth(res.token, res.user);
+        } catch (e) {
+            throw e;
+        } finally {
+            setLoading(l => ({ ...l, login: false }));
+        }
+    };
+
     const register = async (name, email, password) => {
         setLoading(l => ({ ...l, register: true }));
         try {
-            return await registerUser(name, email, password);
+            const data = await registerUser(name, email, password);
+            // If backend returns token (auto-login), persist it
+            if (data.token) {
+                await persistAuth(data.token, data.user);
+            }
+            return data;
         } finally {
             setLoading(l => ({ ...l, register: false }));
         }
@@ -123,6 +149,7 @@ export const AuthProvider = ({ children }) => {
                 isHydrating,
                 loading,
                 login,
+                googleSignIn,
                 logout,
                 register,
                 verify,

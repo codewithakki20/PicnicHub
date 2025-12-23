@@ -20,6 +20,7 @@ export default function ResetPassword() {
   const email = location.state?.email;
 
   const [otp, setOtp] = useState("");
+  const [otpVerified, setOtpVerified] = useState(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -173,19 +174,40 @@ export default function ResetPassword() {
 
           {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <Input
-              label="OTP Code"
-              type="text"
-              required
-              value={otp}
-              placeholder="Enter 6-digit OTP"
-              onChange={(e) => setOtp(e.target.value)}
-              className="bg-white dark:bg-slate-900
-                         border-slate-200 dark:border-slate-800
-                         focus:border-primary-500
-                         focus:ring-primary-500/20
-                         rounded-xl"
-            />
+            <div className="relative">
+              <Input
+                label="OTP Code"
+                type="text"
+                required
+                value={otp}
+                placeholder="Enter 6-digit OTP"
+                onChange={(e) => {
+                  setOtp(e.target.value);
+                  setOtpVerified(null); // Reset verification on change
+                }}
+                onBlur={async () => {
+                  if (otp.length === 6) {
+                    try {
+                      await authApi.verifyResetOtp({ email, otp });
+                      setOtpVerified(true);
+                    } catch (e) {
+                      setOtpVerified(false);
+                      // Optional: setError("Invalid OTP code");
+                    }
+                  }
+                }}
+                className={`bg-white dark:bg-slate-900
+                           border-slate-200 dark:border-slate-800
+                           focus:border-primary-500
+                           focus:ring-primary-500/20
+                           rounded-xl ${otpVerified === true ? 'border-green-500 focus:border-green-500' : ''} ${otpVerified === false ? 'border-rose-500 focus:border-rose-500' : ''}`}
+              />
+              {otpVerified === true && (
+                <div className="absolute right-3 top-[38px] text-green-500 pointer-events-none">
+                  <CheckCircle size={18} />
+                </div>
+              )}
+            </div>
 
             {/* NEW PASSWORD */}
             <div className="relative">

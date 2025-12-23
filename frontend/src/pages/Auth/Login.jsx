@@ -10,12 +10,61 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import { GoogleLogin } from '@react-oauth/google';
+import { googleLogin } from "../../store/authSlice";
+import { useDispatch } from "react-redux";
 
 /* ================= PAGE ================= */
 
 export default function Login() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { login, status } = useAuth();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const { credential } = credentialResponse;
+      // We will decode credential on backend or send it directly.
+      // For now, let's send object. Ideally we decode it to get email/name if we do frontend-only, 
+      // but our backend googleLogin expects { idToken, ... } keys if we built it that way.
+      // However our backend googleLogin logic (req.body) expects: 
+      // { idToken, googleId, email, name, avatar }. 
+      // The `credential` IS the idToken. 
+      // We should ideally decode it here to pass other fields OR backend should decode it.
+      // Let's assume backend MUST verify and decode it.
+
+      // Let's UPDATE backend `googleLogin` controller to decode token itself using `jwt-decode` or library?
+      // Or we decoded on frontend using `jwt-decode`.
+      // It's safer if backend does it, but for now let's just send the idToken as `idToken` 
+      // and let backend decode if I update backend, or I decode here.
+
+      // Simpler: I will decode here to fill the body params my backend expects.
+
+      const payload = parseJwt(credential);
+      await dispatch(googleLogin({
+        idToken: credential,
+        googleId: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        avatar: payload.picture
+      })).unwrap();
+      navigate("/");
+    } catch (err) {
+      console.error("Google Login Failed", err);
+      setError("Google authentication failed.");
+    }
+  };
+
+  function parseJwt(token) {
+    try {
+      var base64Url = token.split('.')[1];
+      var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch { return {}; }
+  }
 
   const [values, setValues] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -182,6 +231,25 @@ export default function Login() {
                 </span>
               )}
             </Button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-slate-50 dark:bg-slate-900 text-slate-500">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError("Google Login Failed")}
+                useOneTap
+                theme="filled_black"
+                shape="pill"
+              />
+            </div>
           </form>
 
           {/* FOOTER */}
